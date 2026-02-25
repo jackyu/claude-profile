@@ -1,0 +1,73 @@
+{
+  // 環境變數
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
+  },
+
+  // 基本偏好設定
+  "language": "traditional chinese",
+  "effortLevel": "medium",
+  "alwaysThinkingEnabled": true,
+  "showTurnDuration": true,
+
+  // 權限管理：自動允許常用指令，減少彈窗擾人
+  "permissions": {
+    "allow": [
+      "Bash(git status*)",
+      "Bash(git log *)",
+      "Bash(git diff *)",
+      "Bash(git show *)",
+      "Bash(git branch *)",
+      "Bash(git stash *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git config *)",
+      "Bash(git rev-parse *)",
+      "Bash(git fetch *)",
+      "Bash(git remote *)",
+      "Bash(ls *)",
+      "Bash(which *)",
+      "Bash(bash -n *)",
+      "Bash(node --check *)",
+      "Skill(opsx:*)",
+      "Bash(npx jest *)",
+      "Bash(pnpm jest *)",
+      "Bash(pnpm test *)",
+      "Read(~/.zshrc)",
+      "mcp__pencil"
+    ],
+    "deny": [
+      "Bash(curl *)",
+      "Read(./.env)",
+      "Read(./secrets/**)"
+    ],
+    "defaultMode": "plan"
+  },
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/.claude/hooks/notify-complete.sh"
+          }
+        ]
+      }
+    ],
+    "TaskCompleted": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/.claude/hooks/coverage-check.sh"
+          }
+        ]
+      }
+    ]
+  },
+  // 狀態列自定義 (顯示於終端機底部)
+  "statusLine": {
+    "type": "command",
+    "command": "branch=$(git branch --show-current 2>/dev/null); wt=\"\"; if [ -f \"$(git rev-parse --show-toplevel 2>/dev/null)/.git\" ]; then wt=\" | wt:$(basename \"$(pwd)\")\"; fi; echo \"${branch}${wt} | $(date +%H:%M)\""
+  }
+}
