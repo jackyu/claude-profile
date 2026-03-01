@@ -1,0 +1,47 @@
+# Claude Code 前端開發 Rules
+
+一套給 Claude Code 使用的前端開發規範，讓 AI 在寫程式碼時自動遵守團隊約定。
+
+## 技術棧
+
+- **Framework**: Next.js (App Router)
+- **Styling**: Tailwind CSS
+- **Data Fetching**: React Query v5
+- **Testing**: Vitest + React Testing Library
+- **Language**: TypeScript (strict mode)
+
+## 檔案總覽
+
+| 檔案 | 涵蓋範圍 |
+|------|----------|
+| `summary.md` | 設計原則摘要 — 為什麼要寫 rules、怎麼寫 |
+| `project-structure.md` | Next.js App Router 專案目錄結構規範 |
+| `typescript.md` | TypeScript 嚴格模式與型別使用規範 |
+| `coding-style.md` | Import 排序、命名慣例、Tailwind CSS 風格 |
+| `tailwind.md` | Tailwind class 排序、design token、dark mode、responsive 策略 |
+| `html-semantics.md` | 語意化 HTML 標籤、無障礙 (a11y)、表單結構 |
+| `component-patterns.md` | React 元件撰寫、狀態管理、Server/Client Component |
+| `data-fetching.md` | React Query v5 資料請求、快取管理、API 層設計 |
+| `error-handling.md` | Error Boundary、API 錯誤、表單驗證、日誌 |
+| `testing.md` | 單元 / 整合 / E2E 測試範圍與覆蓋率目標 |
+| `security.md` | 環境變數、資料驗證、認證授權、依賴安全 |
+| `seo.md` | Next.js Metadata API、Open Graph、Structured Data、技術 SEO |
+| `git-workflow.md` | Conventional Commits、分支管理、MR/PR 流程 |
+
+## 設計原則
+
+> 引用自 `summary.md`
+
+- **從痛點出發** — 你每次都要提醒 AI 的事情，就該變成 rule
+- **30 行以內** — 每個 rule 檔控制在 30 行，簡潔有力
+- **一個檔案一個維度** — 太長就拆，每個檔案聚焦一件事
+
+## 使用方式
+
+將整個 `rules/` 目錄複製到專案的 `.claude/rules/` 下：
+
+```bash
+cp -r rules/ your-project/.claude/rules/
+```
+
+Claude Code 會在對話時自動載入 `.claude/rules/` 中的所有 `.md` 檔案作為指令。
