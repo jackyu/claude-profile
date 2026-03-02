@@ -38,10 +38,22 @@
 cp settings.json ~/.claude/settings.json
 ```
 
-### 套用 rules 到專案
+### 套用 rules（推薦）
+
+使用互動式安裝腳本，可選擇安裝到 user scope（全域）或 project scope（單一專案）：
 
 ```bash
-cp -r rules/ your-project/.claude/rules/
+bash install.sh
+```
+
+或手動複製：
+
+```bash
+# 全域（所有專案共用）
+cp rules/*.md ~/.claude/rules/
+
+# 專案（僅該專案生效）
+cp rules/*.md your-project/.claude/rules/
 ```
 
 ### 套用 CLAUDE.md 到專案
