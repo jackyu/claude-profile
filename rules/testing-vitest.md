@@ -1,6 +1,6 @@
-# testing.md
+# testing-vitest.md
 
-測試規範，使用 Vitest + React Testing Library。
+使用 Vitest + React Testing Library 的測試規範。
 
 ## 基本原則
 
@@ -9,11 +9,12 @@
 - 測試檔案放在同層目錄：`ComponentName.test.tsx`
 - 用 `describe` 分群組，`it` 描述用英文、以動詞開頭
 
-## 測試範圍
+## Vitest 設定
 
-- **Unit Test**：工具函式、custom hooks、pure function
-- **Integration Test**：元件互動、表單送出、API mock 整合
-- **E2E**（Playwright）：關鍵使用者流程（登入、結帳等）
+- 設定檔用 `vitest.config.ts`，繼承 `vite.config.ts`
+- 全域 setup 放 `test/setup.ts`，在 `setupFiles` 中引入
+- 使用 `@testing-library/jest-dom` 的 matchers（透過 setup 引入）
+- 善用 `vi.fn()`、`vi.mock()`、`vi.spyOn()` 進行 mock
 
 ## Mock 規範
 

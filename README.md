@@ -6,7 +6,7 @@
 
 ```
 ├── settings.json        # Claude Code 全域設定（權限、hooks、狀態列）
-├── rules/               # 前端開發規範（13 個 .md 檔案）
+├── rules/               # 前端開發規範（15 個 .md 檔案）
 │   ├── README.md        # Rules 檔案總覽與使用說明
 │   └── *.md             # 各維度規範
 └── CLAUDE.md            # 專案層級指令
@@ -26,7 +26,7 @@
 
 ### rules/
 
-13 個前端開發規範，針對 **Next.js App Router + Tailwind CSS + React Query v5 + Vitest** 技術棧。
+15 個前端開發規範，針對 **Next.js App Router + Tailwind CSS + React Query v5 + Vitest / Jest** 技術棧。
 
 詳見 [rules/README.md](rules/README.md)。
 
