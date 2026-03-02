@@ -16,6 +16,12 @@
 - URL 參數、query string 要做 sanitize 再使用
 - 敏感資料不存 localStorage，改用 httpOnly cookie
 
+## 文件與機敏資訊
+
+- 專案文件出現帳號／密碼時，主動詢問是否為必要保存
+- 文件內不應含任何機敏資訊，改用環境變數或密鑰管理工具替代
+- Code review 時留意 hardcoded credentials
+
 ## 認證與授權
 
 - Token 存在 httpOnly cookie，不放 localStorage
