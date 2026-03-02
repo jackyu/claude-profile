@@ -40,10 +40,30 @@
 
 ## 使用方式
 
-將整個 `rules/` 目錄複製到專案的 `.claude/rules/` 下：
+使用根目錄的安裝腳本，可互動選擇 user scope 或 project scope：
 
 ```bash
-cp -r rules/ your-project/.claude/rules/
+bash install.sh
+```
+
+或手動複製到專案的 `.claude/rules/` 下：
+
+```bash
+cp rules/*.md your-project/.claude/rules/
 ```
 
 Claude Code 會在對話時自動載入 `.claude/rules/` 中的所有 `.md` 檔案作為指令。
+
+## 推薦搭配：everything-claude-code
+
+[everything-claude-code](https://github.com/affaan-m/everything-claude-code) 提供通用的 coding style、git workflow、testing、security 等 rules，適合作為基礎規範搭配本專案的前端專屬規範使用。
+
+安裝方式：
+
+```bash
+git clone https://github.com/affaan-m/everything-claude-code.git
+cd everything-claude-code
+./install.sh typescript   # 依語言選擇：typescript / python / golang
+```
+
+規則會安裝到 `~/.claude/rules/`（user scope），與本專案的 project scope 規則互補、不衝突。
