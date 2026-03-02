@@ -14,7 +14,7 @@
 |---|---|
 | 用 conventional commits | `git-workflow.md` |
 | import 要排序 | `coding-style.md` |
-| 寫完跑測試 | `testing.md` |
+| 寫完跑測試 | `testing-vitest.md` / `testing-jest.md` |
 | 不要把 API key commit 進去 | `security.md` |
 | 改完 code 用 code-reviewer 審 | `agents.md` |
 

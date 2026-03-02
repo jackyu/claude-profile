@@ -7,7 +7,7 @@
 - **Framework**: Next.js (App Router)
 - **Styling**: Tailwind CSS
 - **Data Fetching**: React Query v5
-- **Testing**: Vitest + React Testing Library
+- **Testing**: Vitest / Jest + React Testing Library
 - **Language**: TypeScript (strict mode)
 
 ## 檔案總覽
@@ -23,10 +23,12 @@
 | `component-patterns.md` | React 元件撰寫、狀態管理、Server/Client Component |
 | `data-fetching.md` | React Query v5 資料請求、快取管理、API 層設計 |
 | `error-handling.md` | Error Boundary、API 錯誤、表單驗證、日誌 |
-| `testing.md` | 單元 / 整合 / E2E 測試範圍與覆蓋率目標 |
+| `testing-vitest.md` | Vitest 測試規範與覆蓋率目標 |
+| `testing-jest.md` | Jest 測試規範與覆蓋率目標 |
 | `security.md` | 環境變數、資料驗證、認證授權、依賴安全 |
 | `seo.md` | Next.js Metadata API、Open Graph、Structured Data、技術 SEO |
 | `git-workflow.md` | Conventional Commits、分支管理、MR/PR 流程 |
+| `git-worktree.md` | Git Worktree 目錄配置、命名與清理規範 |
 
 ## 設計原則
 
