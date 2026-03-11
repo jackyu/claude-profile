@@ -6,6 +6,8 @@
 
 - `settings.json` — Claude Code 全域設定（權限、hooks、狀態列）
 - `rules/` — 前端開發規範集合（15 個 .md 檔案）
+- `hooks/` — Claude Code hooks 集合（coverage-check 等）
+- `status-line/` — 自訂終端狀態列腳本與安裝工具
 - `CLAUDE.md` — 本檔案，專案層級指令
 
 ## 編輯規則
