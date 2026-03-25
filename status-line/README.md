@@ -5,8 +5,8 @@
 ## 預覽
 
 ```
-[Opus 4.6] | my-project | 🌿 feature/auth | wt:confident-lalande
-▓▓▓░░░░░░░ 30% | ⏱️ 5m 12s | 2026/03/04 14:30
+[Opus 4.6] | my-project | 🌿 feature/auth | wt:confident-lalande | 📅 2026/03/04 14:30
+▓▓▓░░░░░░░ 30% | ⏱️ 5m 12s | 5h ████░░░░ 50% | 7d ██░░░░░░ 15%
 ```
 
 ## 顯示內容
@@ -16,11 +16,13 @@
 - `專案名稱` — 可點擊連結至 git remote（支援 OSC 8 的終端）
 - `🌿 分支` — 目前 git 分支
 - `wt:名稱` — Git worktree 名稱（僅在 worktree 中顯示）
+- `📅 日期時間` — 目前日期與時間
 
 **第二行**
 - `▓░ PCT%` — Context window 使用進度列（綠 → 黃 → 紅）
 - `⏱️ Xm Ys` — 工作階段持續時間
-- `YYYY/MM/DD HH:MM` — 目前日期時間
+- `5h ████░░░░ XX%` — 5 小時 rate limit 使用比例
+- `7d ████░░░░ XX%` — 7 天 rate limit 使用比例
 
 ## 需求
 
@@ -60,7 +62,7 @@ chmod +x ~/.claude/statusline.sh
 用模擬資料測試腳本輸出：
 
 ```bash
-echo '{"model":{"id":"claude-opus-4-6","display_name":"Opus"},"workspace":{"current_dir":"/tmp","project_dir":"/tmp"},"context_window":{"used_percentage":42},"cost":{"total_duration_ms":300000}}' | ~/.claude/statusline.sh
+echo '{"model":{"id":"claude-opus-4-6","display_name":"Opus"},"workspace":{"current_dir":"/tmp","project_dir":"/tmp"},"context_window":{"used_percentage":42},"cost":{"total_duration_ms":300000},"rate_limits":{"five_hour":{"used_percentage":40,"resets_at":1774033200},"seven_day":{"used_percentage":15,"resets_at":1774497600}}}' | ~/.claude/statusline.sh
 ```
 
 ## 自訂
