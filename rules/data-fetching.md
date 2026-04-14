@@ -22,6 +22,33 @@
 - Response 用 Zod schema 驗證，確保型別安全
 - 錯誤統一用自訂 `ApiError` class 包裝
 
+## Query 資料同步至表單（可編輯場景）
+
+當 `useQuery` 取得的資料需同步至 `useState` 供使用者編輯時，必須防止背景 refetch 覆蓋編輯中的值。
+
+React Query 預設 `refetchOnWindowFocus: true`，閒置後切回視窗會觸發 refetch → `data` 更新 → `useEffect` 重新執行 → 覆蓋本地值。
+
+**必做：**
+
+1. hook 設定 `refetchOnWindowFocus: false`
+2. `useEffect` 僅一次性同步，用 `useRef` 標記已初始化
+
+```tsx
+// ✅
+const isInitialized = useRef(false);
+useEffect(() => {
+  if (data && !isInitialized.current) {
+    setFormValue(data.value);
+    isInitialized.current = true;
+  }
+}, [data]);
+
+// ❌ data 變更時覆蓋編輯中的值
+useEffect(() => {
+  if (data) setFormValue(data.value);
+}, [data]);
+```
+
 ## Server Component 資料取得
 
 - Server Component 直接用 `fetch` + Next.js cache 機制
