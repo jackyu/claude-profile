@@ -6,6 +6,10 @@
 
 ```
 ├── settings.json        # Claude Code 全域設定（權限、hooks、狀態列）
+├── commands/            # 自訂 slash 指令
+│   ├── start.md         # /start 啟動新開發任務
+│   ├── push.md          # /push 推送並開立 MR
+│   └── auto-review.md   # /auto-review 監聽 MR 自動審查
 ├── rules/               # 前端開發規範（15 個 .md 檔案）
 │   ├── README.md        # Rules 檔案總覽與使用說明
 │   └── *.md             # 各維度規範
@@ -29,6 +33,18 @@
 | `hooks.Stop` | 對話結束時桌面通知 |
 | `hooks.TaskCompleted` | 任務完成時檢查測試覆蓋率 |
 | `statusLine` | 終端底部顯示分支名稱與時間 |
+
+### commands/
+
+自訂 slash 指令，安裝後可在任意專案以 `/指令名` 觸發。
+
+| 指令 | 功能 |
+|------|------|
+| `/start` | 依任務描述自動建立 git worktree 與分支，並切換進入開發環境 |
+| `/push` | 推送當前分支至遠端並建立 GitLab MR（含 title、description、label、assignee） |
+| `/auto-review` | 監聽目前 repo 對應的 GitLab 專案新/更新 MR，自動產出 HTML review 並推 Mattermost 通知（自帶迴圈） |
+
+> 指令會引用 `~/.claude/scripts/`、`~/.claude/schedules/` 等外部腳本與 skills，本 repo 僅保存指令定義本身。
 
 ### rules/
 
@@ -55,6 +71,12 @@ Claude Code hooks 集合，可安裝到任意專案。
 
 ```bash
 cp settings.json ~/.claude/settings.json
+```
+
+### 安裝自訂指令
+
+```bash
+cp commands/*.md ~/.claude/commands/
 ```
 
 ### 套用 rules（推薦）
