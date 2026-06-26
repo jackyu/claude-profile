@@ -10,7 +10,27 @@ description: 依任務描述自動建立 git worktree 與分支，並切換進�
 
 依以下順序執行：
 
+### 0. 載入 spec brief（決定實作依據）
+
+開工前先把規格帶進 session，避免只拿到一句標題。依優先序：
+
+1. **`$ARGUMENTS` 含 issue ID/URL** → 以 issue 全文為主。
+   - URL：`~/.claude/skills/_shared/fe-mr-common/scripts/issue-get.sh <url>`
+   - `#NNN`：從 `git remote get-url origin` 解析 project，再 `issue-get.sh <project> NNN`
+   - issue 的 title/labels 拿去推導分支 type 與名稱（見步驟 1–2）。
+2. **否則 → 找 `/spec` 的持久 spec 檔**（先 active 再 archive）：
+   - 帶明確參照（`#NNN` 或 spec 檔路徑）→ 直接定位 `.claude/specs/spec-<NNN>-*.md`、`.claude/specs/archive/spec-<NNN>-*.md` 或該路徑。
+   - 無明確參照：`.claude/specs/*.md` 只有一份 → 直接用；多份 → `AskUserQuestion` 讓使用者選。
+   - **不做模糊文字比對**——認不出就往下一階。
+3. **兩者都沒有** → 把 `$ARGUMENTS` 當任務描述；若連描述都沒有，請使用者補述要做什麼。
+
+載入後，把 brief（AC、決議、API 相依）留在 session 當實作依據；**不寫進 worktree**（避免誤 commit）。
+
+**消費即歸檔**：若依據來自 `.claude/specs/` 的 active spec 檔，建立 worktree 後把該檔移到 `.claude/specs/archive/`（不刪、留痕），讓 active 目錄只剩「尚未開工」的 spec。
+
 ### 1. 解析分支類型（type）
+
+> 若步驟 0 的 brief 來自 issue：type 優先讀 issue labels（`# type::bug`→`bug/`、`# type::feature`→`feat/`…），分支名用 issue title 推導；抓不到再退回下表關鍵字規則。
 
 從任務描述中偵測關鍵字：
 
@@ -117,6 +137,7 @@ git worktree list
 - 目前分支名稱
 - 基底狀態：相對 `origin/<default>` 無多餘 commit（步驟 5 的檢查結果）
 - 其他所有 worktree 的路徑與分支（從 `git worktree list` 取得）
+- 一行訊息：`實作依據：<issue #NNN｜spec 檔路徑（已歸檔）｜對話描述>`
 - 一行訊息：`準備開發：<原始任務描述>`
 
 ### 8. 若 skill 執行中發生錯誤
@@ -125,6 +146,8 @@ git worktree list
 - 目錄未在 .gitignore → 遵循 skill 指引加入並 commit
 - 基底汙染（步驟 5 檢查到多餘 commit）→ 列出多餘 commit，建議 `git rebase --onto origin/<default> <base>` 後再開發
 - baseline 測試失敗 → 回報具體錯誤，詢問是否繼續
+- `issue-get.sh` 抓取失敗（步驟 0）→ 提示改貼 issue 內容，或改用 `.claude/specs/` 的 spec 檔
+- `.claude/specs/` 有多份 spec → `AskUserQuestion` 詢問用哪一份
 
 ## 範例
 
