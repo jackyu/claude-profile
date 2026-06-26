@@ -8,13 +8,13 @@ argument-hint: "[PM issue URL | 需求描述 | 留空從對話起手]"
 附加參數：$ARGUMENTS
 
 把實作前的三步手動流程收合成一條龍：探索意圖 → 逼問規格 → 產出前端技術 issue。
-過程中每個關卡都讀寫同一份 **spec 暫存檔**，讓逼問的決議不會只活在對話記憶裡而流失。
+過程中每個關卡都讀寫同一份 **spec 檔**，讓逼問的決議不會只活在對話記憶裡而流失。
 
 ## 你的任務
 
-依以下順序執行。每一步的決議都要回寫 spec 暫存檔，gate 未通過不得往下。
+依以下順序執行。每一步的決議都要回寫 spec 檔，gate 未通過不得往下。
 
-### 1. 解析輸入 + 建立 spec 暫存檔
+### 1. 解析輸入 + 建立 spec 檔
 
 從 `$ARGUMENTS` 判斷起點：
 
@@ -24,7 +24,7 @@ argument-hint: "[PM issue URL | 需求描述 | 留空從對話起手]"
 | 一段需求描述 | 直接當作需求起手 |
 | 留空 | 從當前對話上下文擷取需求 |
 
-接著在 scratchpad 目錄建一份 `spec-<slug>.md`（`<slug>` 由需求重點取 kebab-case），骨架如下：
+接著在專案內建一份持久 spec 檔 **`.claude/specs/spec-<slug>.md`**（`<slug>` 由需求重點取 kebab-case），骨架如下：
 
 ```markdown
 # Spec: <需求標題>
@@ -38,6 +38,14 @@ argument-hint: "[PM issue URL | 需求描述 | 留空從對話起手]"
 ## 未決問題帳本
 （open question → resolution，全部 resolved 才放行產 issue）
 - [ ] <尚未解決的問題>
+```
+
+放 `.claude/specs/` 而非 scratchpad，是為了讓它**跨 session 持久、可被 `/start` 撈到**當實作 brief（scratchpad 帶 session UUID，換 session 就找不到）。
+
+比照 `.claude/worktrees/` 慣例，確保 `.claude/specs/`（含 `archive/`）已在 `.gitignore`：
+
+```bash
+grep -qxF '.claude/specs/' .gitignore || printf '.claude/specs/\n' >> .gitignore
 ```
 
 後續每個關卡都讀寫這份檔，它就是 grill ↔ fe-issue 之間的正式接口。
@@ -86,7 +94,7 @@ ls CONTEXT.md docs/adr/ 2>/dev/null
 
 若選擇審：
 
-- 用 `Agent` 工具，`subagent_type: "codex:codex-rescue"`，prompt 指向 spec 暫存檔絕對路徑，請它對規格做 **adversarial review**：找漏掉的邊界情況、模糊或不可測的 AC、未處理的狀態與錯誤分支、遺漏的 API。
+- 用 `Agent` 工具，`subagent_type: "codex:codex-rescue"`，prompt 指向 spec 檔絕對路徑，請它對規格做 **adversarial review**：找漏掉的邊界情況、模糊或不可測的 AC、未處理的狀態與錯誤分支、遺漏的 API。
 - **不要用** `/codex:review` —— 那支只審 git 工作區的程式碼 diff，無法審 scratchpad 的 markdown 草稿。
 - 若 codex 缺席/未認證（companion 報 missing 或 unauthenticated）→ 優雅略過並提示使用者可跑 `/codex:setup`，**不阻斷**主流程。
 - 把 codex 回饋折回 spec 檔（新問題進帳本）→ 重跑第 4 步 gate，乾淨後才繼續。
@@ -95,12 +103,21 @@ ls CONTEXT.md docs/adr/ 2>/dev/null
 
 用 Skill 工具呼叫 `fe-issue`，並明確傳入：
 
-- spec 暫存檔的絕對路徑，告知：**「決議紀錄」即為已澄清的規格，跳過 Phase 1.1 重複澄清**
+- spec 檔（`.claude/specs/spec-<slug>.md`）的絕對路徑，告知：**「決議紀錄」即為已澄清的規格，跳過 Phase 1.1 重複澄清**
 - PM issue 來源（URL 或內容，若步驟 1 有抓到）
 
 讓 `fe-issue` 直接走它的：架構探索 (1.3) → API 狀態 (1.4) → labels (1.5) → 產前端技術 issue 草稿。
 
 沿用 `fe-issue` 既有行為，由它詢問是否用 `issue-create.sh` 建到 GitLab。
+
+**若有建 GitLab issue**：把 spec 檔改名嵌入 issue iid → `.claude/specs/spec-<NNN>-<slug>.md`，讓 `/start #NNN` 之後能用 `NNN` 精準對上。沒建 issue 則維持 `spec-<slug>.md`。
+
+### 7. 印出交接線索
+
+明確印出下一步 `/start` 指令，讓接續實作不必手動回想：
+
+- 有建 issue → `下一步：/start #NNN`
+- 沒建 issue（只有 spec 檔）→ `下一步：/start .claude/specs/spec-<slug>.md`
 
 ## 錯誤處理
 
