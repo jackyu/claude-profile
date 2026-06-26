@@ -8,6 +8,7 @@
 ├── settings.json        # Claude Code 全域設定（權限、hooks、狀態列）
 ├── commands/            # 自訂 slash 指令
 │   ├── start.md         # /start 啟動新開發任務
+│   ├── spec.md          # /spec 規格逼問到產出開發 issue
 │   ├── push.md          # /push 推送並開立 MR
 │   └── auto-review.md   # /auto-review 監聽 MR 自動審查
 ├── rules/               # 前端開發規範（15 個 .md 檔案）
@@ -41,6 +42,7 @@
 | 指令 | 功能 |
 |------|------|
 | `/start` | 依任務描述自動建立 git worktree 與分支，並切換進入開發環境 |
+| `/spec` | 規格逼問到產出前端技術 issue 一條龍（brainstorming → grill → fe-issue），決議落地 spec 檔、附驗收 gate 與可選 codex 審查 |
 | `/push` | 推送當前分支至遠端並建立 GitLab MR（含 title、description、label、assignee） |
 | `/auto-review` | 監聽目前 repo 對應的 GitLab 專案新/更新 MR，自動產出 HTML review 並推 Mattermost 通知（自帶迴圈） |
 
