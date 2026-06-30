@@ -44,6 +44,18 @@
     "defaultMode": "plan"
   },
   "hooks": {
+    // 強制 MR 描述經 fe-mr-generator 產生（驗隱形標記，缺則擋下建立 MR）
+    "PreToolUse": [
+      {
+        "matcher": "mcp__gitLab__create_merge_request|mcp__gitLab__update_merge_request",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/.claude/hooks/enforce-mr-generator.sh"
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "hooks": [
