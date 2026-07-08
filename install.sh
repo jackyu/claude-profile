@@ -4,6 +4,7 @@ set -euo pipefail
 # 取得腳本所在目錄（支援 symlink）
 SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}" 2>/dev/null || echo "${BASH_SOURCE[0]}")")" && pwd)"
 RULES_DIR="$SCRIPT_DIR/rules"
+SCRIPTS_DIR="$SCRIPT_DIR/scripts"
 
 # 顏色定義
 GREEN='\033[0;32m'
@@ -14,29 +15,108 @@ NC='\033[0m' # No Color
 
 echo ""
 echo -e "${CYAN}╔══════════════════════════════════════╗${NC}"
-echo -e "${CYAN}║   Claude Code Rules 安裝工具         ║${NC}"
+echo -e "${CYAN}║   Claude Code 設定安裝工具           ║${NC}"
 echo -e "${CYAN}╚══════════════════════════════════════╝${NC}"
 echo ""
 
-# 檢查 rules 目錄是否存在
-if [[ ! -d "$RULES_DIR" ]]; then
-  echo -e "${RED}錯誤：找不到 rules/ 目錄（$RULES_DIR）${NC}"
-  exit 1
-fi
+# 安裝 rules/*.md（排除 README.md）到指定目錄
+install_rules() {
+  local target_dir="$1"
 
-# 選擇安裝範圍
-echo "請選擇安裝範圍："
-echo ""
-echo "  [1] User（全域）  → ~/.claude/rules/"
-echo "  [2] Project（專案）→ <project>/.claude/rules/"
-echo ""
-read -rp "輸入選項 (1/2): " scope_choice
+  if [[ ! -d "$RULES_DIR" ]]; then
+    echo -e "${RED}錯誤：找不到 rules/ 目錄（$RULES_DIR）${NC}"
+    exit 1
+  fi
 
-case "$scope_choice" in
-  1)
-    TARGET_DIR="$HOME/.claude/rules"
+  echo ""
+  echo -e "安裝目標：${GREEN}$target_dir${NC}"
+
+  # 衝突處理：目標目錄已有 rule 檔案
+  if [[ -d "$target_dir" ]] && ls "$target_dir"/*.md &>/dev/null; then
     echo ""
-    echo -e "安裝目標：${GREEN}$TARGET_DIR${NC}"
+    echo -e "${YELLOW}⚠ 目標目錄已存在 rule 檔案${NC}"
+    read -rp "要覆蓋現有檔案嗎？(y/N): " overwrite
+    if [[ ! "$overwrite" =~ ^[Yy]$ ]]; then
+      echo "已取消安裝。"
+      exit 0
+    fi
+  fi
+
+  mkdir -p "$target_dir"
+
+  local count=0
+  local file filename
+  for file in "$RULES_DIR"/*.md; do
+    filename="$(basename "$file")"
+    [[ "$filename" == "README.md" ]] && continue
+    cp "$file" "$target_dir/$filename"
+    count=$((count + 1))
+  done
+
+  echo ""
+  echo -e "${GREEN}✔ 已安裝 ${count} 個 rule 檔案${NC}"
+  echo "  目標路徑：$target_dir"
+}
+
+# 同步 scripts/ 下的 .sh 與 .env.example 到 ~/.claude/scripts/
+# 保留目錄結構、自動 chmod +x；絕不覆蓋既有的 .env（含真實憑證）
+install_scripts() {
+  local target_dir="$HOME/.claude/scripts"
+
+  if [[ ! -d "$SCRIPTS_DIR" ]]; then
+    echo -e "${RED}錯誤：找不到 scripts/ 目錄（$SCRIPTS_DIR）${NC}"
+    exit 1
+  fi
+
+  echo ""
+  echo -e "安裝目標：${GREEN}$target_dir${NC}"
+  echo -e "${YELLOW}註：僅同步 .sh 與 .env.example；既有的 .env（含真實憑證）不會被覆蓋。${NC}"
+
+  # 衝突處理：目標目錄已有腳本
+  if [[ -d "$target_dir" ]] && [[ -n "$(find "$target_dir" -name '*.sh' -print -quit 2>/dev/null)" ]]; then
+    echo ""
+    echo -e "${YELLOW}⚠ 目標目錄已存在腳本${NC}"
+    read -rp "要覆蓋現有腳本嗎？(y/N): " overwrite
+    if [[ ! "$overwrite" =~ ^[Yy]$ ]]; then
+      echo "已取消安裝。"
+      exit 0
+    fi
+  fi
+
+  mkdir -p "$target_dir"
+
+  local count=0
+  local file rel dest
+  while IFS= read -r -d '' file; do
+    rel="${file#"$SCRIPTS_DIR"/}"
+    dest="$target_dir/$rel"
+    mkdir -p "$(dirname "$dest")"
+    cp "$file" "$dest"
+    [[ "$file" == *.sh ]] && chmod +x "$dest"
+    count=$((count + 1))
+  done < <(find "$SCRIPTS_DIR" -type f \( -name '*.sh' -o -name '.env.example' \) -print0)
+
+  echo ""
+  echo -e "${GREEN}✔ 已安裝 ${count} 個腳本檔案${NC}"
+  echo "  目標路徑：$target_dir"
+  echo ""
+  echo -e "${YELLOW}下一步：建立 GitLab 憑證檔（腳本需要）${NC}"
+  echo "  cp $target_dir/gitlab/.env.example $target_dir/gitlab/.env"
+  echo "  # 編輯 .env 填入你的 GITLAB_PERSONAL_ACCESS_TOKEN 與 GITLAB_API_URL"
+}
+
+# 選擇安裝項目
+echo "請選擇安裝項目："
+echo ""
+echo "  [1] Rules（規範）  → User 全域    ~/.claude/rules/"
+echo "  [2] Rules（規範）  → Project 專案  <project>/.claude/rules/"
+echo "  [3] Scripts（腳本）→ ~/.claude/scripts/"
+echo ""
+read -rp "輸入選項 (1/2/3): " choice
+
+case "$choice" in
+  1)
+    install_rules "$HOME/.claude/rules"
     ;;
   2)
     echo ""
@@ -48,45 +128,15 @@ case "$scope_choice" in
       echo -e "${RED}錯誤：目錄不存在 — $project_path${NC}"
       exit 1
     fi
-    TARGET_DIR="$project_path/.claude/rules"
-    echo ""
-    echo -e "安裝目標：${GREEN}$TARGET_DIR${NC}"
+    install_rules "$project_path/.claude/rules"
+    ;;
+  3)
+    install_scripts
     ;;
   *)
-    echo -e "${RED}無效選項，請輸入 1 或 2${NC}"
+    echo -e "${RED}無效選項，請輸入 1、2 或 3${NC}"
     exit 1
     ;;
 esac
 
-# 衝突處理：目標目錄已有檔案
-if [[ -d "$TARGET_DIR" ]] && ls "$TARGET_DIR"/*.md &>/dev/null; then
-  echo ""
-  echo -e "${YELLOW}⚠ 目標目錄已存在 rule 檔案${NC}"
-  read -rp "要覆蓋現有檔案嗎？(y/N): " overwrite
-  if [[ ! "$overwrite" =~ ^[Yy]$ ]]; then
-    echo "已取消安裝。"
-    exit 0
-  fi
-fi
-
-# 建立目標目錄
-mkdir -p "$TARGET_DIR"
-
-# 複製 rules/*.md（排除 README.md）
-count=0
-for file in "$RULES_DIR"/*.md; do
-  filename="$(basename "$file")"
-  if [[ "$filename" == "README.md" ]]; then
-    continue
-  fi
-  cp "$file" "$TARGET_DIR/$filename"
-  count=$((count + 1))
-done
-
-# 結果摘要
-echo ""
-echo -e "${GREEN}✔ 安裝完成！${NC}"
-echo ""
-echo "  已安裝 ${count} 個 rule 檔案"
-echo "  目標路徑：$TARGET_DIR"
 echo ""
