@@ -4,6 +4,7 @@
 # Line 2: ▓▓▓░░░(gradient) PCT% | $X.XX | ⏱️ Xm Ys | 5h:XX% 7d:XX% | 📅 date
 #
 # 零值智慧隱藏：費用=0、時間=0、行數=0 時自動省略
+# Git 狀態以 current_dir 為準（cd／進 worktree 後跟著變），project_dir 只用於專案名稱
 # 需求: jq (https://jqlang.github.io/jq/)
 # 安裝: bash status-line/install.sh
 
@@ -24,7 +25,7 @@ GRAD_B=(113 90 70 50 30 20 15 10 5 0)
 
 # ─── 快取設定 ─────────────────────────────────────
 CACHE_DIR="/tmp/claude-statusline-cache"
-GIT_CACHE_TTL=5
+GIT_CACHE_TTL=2
 VERSION_CACHE_TTL=300
 mkdir -p "$CACHE_DIR" 2>/dev/null
 
@@ -54,10 +55,13 @@ parsed=$(printf '%s' "$input" | jq -r '[
   (.cost.total_duration_ms // 0 | tostring),
   (.cost.total_cost_usd // 0 | tostring),
   (.rate_limits.five_hour.used_percentage // 0 | floor | tostring),
-  (.rate_limits.seven_day.used_percentage // 0 | floor | tostring)
+  (.rate_limits.seven_day.used_percentage // 0 | floor | tostring),
+  (.workspace.git_worktree // "")
 ] | join("\t")' 2>/dev/null) || fallback "parse error"
 
-IFS=$'\t' read -r MODEL DIR PROJECT_DIR PCT DURATION_MS COST_USD PCT_5H PCT_7D <<< "$parsed"
+IFS=$'\t' read -r MODEL DIR PROJECT_DIR PCT DURATION_MS COST_USD PCT_5H PCT_7D GIT_WORKTREE <<< "$parsed"
+
+[ -z "$DIR" ] && DIR="$PROJECT_DIR"
 
 PCT=${PCT:-0};         [ "$PCT" = "null" ] && PCT=0
 DURATION_MS=${DURATION_MS:-0}; [ "$DURATION_MS" = "null" ] && DURATION_MS=0
@@ -79,7 +83,7 @@ CC_VER_DISPLAY=""
 [ -n "$CC_VER" ] && CC_VER_DISPLAY=" ${DIM}${CC_VER}${RST}"
 
 # ─── 專案連結（OSC 8 clickable）────────────────────
-REMOTE_RAW=$(git -C "$PROJECT_DIR" remote get-url origin 2>/dev/null)
+REMOTE_RAW=$(git -C "$DIR" remote get-url origin 2>/dev/null)
 if [ -n "$REMOTE_RAW" ]; then
   REMOTE=$(printf '%s' "$REMOTE_RAW" \
     | sed 's|^git@\([^:]*\):|https://\1/|' \
@@ -89,22 +93,24 @@ else
   PROJECT_LINK="$PROJECT_NAME"
 fi
 
-# ─── Git 狀態（快取 5 秒）──────────────────────────
-CACHE_KEY=$(printf '%s' "$PROJECT_DIR" | md5 2>/dev/null || printf '%s' "$PROJECT_DIR" | md5sum 2>/dev/null | cut -d' ' -f1)
+# ─── Git 狀態（以 current_dir 為準，快取 2 秒）──────
+CACHE_KEY=$(printf '%s' "$DIR" | md5 2>/dev/null || printf '%s' "$DIR" | md5sum 2>/dev/null | cut -d' ' -f1)
 GIT_CACHE_FILE="$CACHE_DIR/git_${CACHE_KEY}"
 
+# 快取逐行儲存：tab 分隔遇空欄位（clean 時 DIRTY 為空）會被 read 摺疊造成欄位位移
 if cache_valid "$GIT_CACHE_FILE" "$GIT_CACHE_TTL"; then
-  IFS=$'\t' read -r BRANCH DIRTY ADDITIONS DELETIONS < "$GIT_CACHE_FILE"
+  { read -r BRANCH; read -r DIRTY; read -r ADDITIONS; read -r DELETIONS; } < "$GIT_CACHE_FILE"
 else
-  BRANCH=$(git -C "$PROJECT_DIR" branch --show-current 2>/dev/null)
+  BRANCH=$(git -C "$DIR" branch --show-current 2>/dev/null)
   DIRTY=""
-  if git -C "$PROJECT_DIR" rev-parse --git-dir &>/dev/null; then
-    if ! git -C "$PROJECT_DIR" diff --quiet HEAD 2>/dev/null || \
-       ! git -C "$PROJECT_DIR" diff --cached --quiet 2>/dev/null; then
+  if git -C "$DIR" rev-parse --git-dir &>/dev/null; then
+    if ! git -C "$DIR" diff --quiet HEAD 2>/dev/null || \
+       ! git -C "$DIR" diff --cached --quiet 2>/dev/null; then
       DIRTY="*"
     fi
   fi
-  GIT_STAT=$(git -C "$PROJECT_DIR" diff --numstat HEAD 2>/dev/null; git -C "$PROJECT_DIR" diff --cached --numstat 2>/dev/null)
+  # diff HEAD 已涵蓋 staged＋未 staged，再加 --cached 會把 staged 算兩次
+  GIT_STAT=$(git -C "$DIR" diff --numstat HEAD 2>/dev/null)
   if [ -n "$GIT_STAT" ]; then
     ADDITIONS=$(printf '%s\n' "$GIT_STAT" | awk '{s+=$1} END {print s+0}')
     DELETIONS=$(printf '%s\n' "$GIT_STAT" | awk '{s+=$2} END {print s+0}')
@@ -112,13 +118,17 @@ else
     ADDITIONS=0
     DELETIONS=0
   fi
-  printf '%s\t%s\t%s\t%s' "$BRANCH" "$DIRTY" "$ADDITIONS" "$DELETIONS" > "$GIT_CACHE_FILE"
+  printf '%s\n%s\n%s\n%s\n' "$BRANCH" "$DIRTY" "$ADDITIONS" "$DELETIONS" > "$GIT_CACHE_FILE"
 fi
 
-# Worktree 偵測
+# Worktree 偵測（payload 的 git_worktree 只有新版 Claude Code 才有，缺欄位時自行偵測）
 WT=""
-GIT_FILE="$(git -C "$DIR" rev-parse --show-toplevel 2>/dev/null)/.git"
-[ -f "$GIT_FILE" ] && WT=" | wt:$(basename "$DIR")"
+if [ -n "$GIT_WORKTREE" ]; then
+  WT=" | wt:$(basename "$GIT_WORKTREE")"
+else
+  GIT_FILE="$(git -C "$DIR" rev-parse --show-toplevel 2>/dev/null)/.git"
+  [ -f "$GIT_FILE" ] && WT=" | wt:$(basename "$DIR")"
+fi
 
 # ─── 漸層進度條 ─────────────────────────────────────
 [ "$PCT" -gt 100 ] 2>/dev/null && PCT=100
