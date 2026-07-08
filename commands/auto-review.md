@@ -47,7 +47,7 @@ retry <原本的指令>
 對每個 token 判斷：
 
 - 符合 `^[0-9]+(m|h|s)?$`（如 `20m`、`1h`、`90s`、`1200`）→ 視為 **interval**。
-- 其餘 → 視為 **repo**（短名，如 `web-app`、`mycompany-web`；repo 名永遠不長得像 interval，故零誤判）。
+- 其餘 → 視為 **repo**（短名，如 `web-app`、`admin`；repo 名永遠不長得像 interval，故零誤判）。
 
 得到兩個變數：
 

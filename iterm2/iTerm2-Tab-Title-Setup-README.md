@@ -43,7 +43,7 @@ function set_iterm_tab_title() {
 
   if [[ -n "$branch" && -n "$worktree_root" ]]; then
     local worktree_name=$(basename "$worktree_root")
-    # Format: worktree:branch (e.g., mycompany-web:feature/auth)
+    # Format: worktree:branch (e.g., my-app:feature/auth)
     print -Pn "\e]1;${worktree_name}:${branch}\a"
   else
     # Fallback: show actual directory name
@@ -64,8 +64,8 @@ add-zsh-hook precmd set_iterm_tab_title
 
 | 情境 | Tab 標題 |
 |------|----------|
-| `cd ~/Projects/mycompany-web` (branch: main) | `mycompany-web:main` |
-| `git checkout feature/auth` | `mycompany-web:feature/auth` |
+| `cd ~/Projects/my-app` (branch: main) | `my-app:main` |
+| `git checkout feature/auth` | `my-app:feature/auth` |
 | `cd ~` | `~` |
 | `cd /tmp` | `tmp` |
 
