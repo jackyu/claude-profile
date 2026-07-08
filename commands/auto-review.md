@@ -47,7 +47,7 @@ retry <原本的指令>
 對每個 token 判斷：
 
 - 符合 `^[0-9]+(m|h|s)?$`（如 `20m`、`1h`、`90s`、`1200`）→ 視為 **interval**。
-- 其餘 → 視為 **repo**（短名，如 `masterlink`、`fugle-web`；repo 名永遠不長得像 interval，故零誤判）。
+- 其餘 → 視為 **repo**（短名，如 `web-app`、`admin`；repo 名永遠不長得像 interval，故零誤判）。
 
 得到兩個變數：
 
@@ -139,7 +139,7 @@ Markdown 內容建議：
 - MR 標題 + `web_url`（可點進 GitLab）
 - 合併建議結論 + severity 計數（如 🔴1 🟠2 🟡3 🔵0 ⚪0）
 - **HTML 報告路徑**，用 `file://` 開頭的絕對路徑（讓我點開即用 browser 閱讀），
-  例如 `file:///Users/.../reports/masterlink/mr-review-123-ab12cd34.html`
+  例如 `file:///Users/.../reports/web-app/mr-review-123-ab12cd34.html`
 
 通知成功後，更新狀態檔（用 helper，immutable 合併、不破壞其他條目；同樣用 `retry` 包起來）：
 
