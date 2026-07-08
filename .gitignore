@@ -1,1 +1,4 @@
 .DS_Store
+
+# 機密憑證檔（切勿 commit，用 .env.example 當範本）
+.env
