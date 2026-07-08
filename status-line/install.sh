@@ -36,12 +36,14 @@ if [ -f "$SETTINGS" ]; then
   if grep -q '"statusLine"' "$SETTINGS"; then
     echo "ℹ️  settings.json 已有 statusLine 設定，請確認指向："
     echo "   \"command\": \"~/.claude/statusline.sh\""
+    echo "   建議加上 \"refreshInterval\": 5（idle 時每 5 秒重跑，分支/時間才會即時更新）"
   else
     echo ""
     echo "📝 請在 $SETTINGS 中加入："
     echo '  "statusLine": {'
     echo '    "type": "command",'
-    echo '    "command": "~/.claude/statusline.sh"'
+    echo '    "command": "~/.claude/statusline.sh",'
+    echo '    "refreshInterval": 5'
     echo '  }'
   fi
 else
@@ -50,7 +52,8 @@ else
   echo '{'
   echo '  "statusLine": {'
   echo '    "type": "command",'
-  echo '    "command": "~/.claude/statusline.sh"'
+  echo '    "command": "~/.claude/statusline.sh",'
+  echo '    "refreshInterval": 5'
   echo '  }'
   echo '}'
 fi

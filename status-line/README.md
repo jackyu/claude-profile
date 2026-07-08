@@ -14,8 +14,8 @@
 **第一行**
 - `[Model]` ver — 模型名稱與 Claude Code 版號
 - `📁 專案` — 可點擊連結至 git remote（OSC 8）
-- `🌿 branch*` — 分支名稱，`*` 表示有未提交變更
-- `wt:name` — Worktree 名稱（僅在 worktree 中顯示）
+- `🌿 branch*` — 分支名稱（以 current_dir 為準，cd／進 worktree 後跟著變），`*` 表示有未提交變更
+- `wt:name` — Worktree 名稱（僅在 worktree 中顯示；優先讀 payload 的 `git_worktree` 欄位）
 - `+N -N` — 新增/刪除行數（零值隱藏）
 
 **第二行**
@@ -28,9 +28,15 @@
 ## 效能特性
 
 - **單次 jq** — 所有 JSON 欄位一次解析，避免多次 fork
-- **Git 快取** — 分支、dirty、diff stats 快取 5 秒（`/tmp/claude-statusline-cache/`）
+- **Git 快取** — 分支、dirty、diff stats 快取 2 秒（`/tmp/claude-statusline-cache/`，以 current_dir 為 key）
 - **版號快取** — `claude --version` 快取 5 分鐘
 - **降級處理** — `jq` 不存在或解析失敗時顯示提示而非報錯
+
+## 更新時機
+
+狀態列本身是事件驅動：Claude Code 只在新訊息、`/compact`、權限模式切換等時機重跑腳本，idle 期間不會刷新。搭配 `settings.json` 的 `refreshInterval`（單位秒）可在 idle 時定時重跑，分支與時鐘才會即時。
+
+Rate limit（`5h:` / `7d:`）的數字來自本 session 最近一次 API 回應的快照——其他 session 消耗的額度要等本 session 下一次 API 呼叫才會反映，這是平台限制，非腳本問題。
 
 ## 需求
 
@@ -49,13 +55,14 @@ cp status-line/statusline.sh ~/.claude/statusline.sh
 chmod +x ~/.claude/statusline.sh
 ```
 
-在 `~/.claude/settings.json` 中加入：
+在 `~/.claude/settings.json` 中加入（`refreshInterval` 讓 idle 時也每 5 秒重跑）：
 
 ```json
 {
   "statusLine": {
     "type": "command",
-    "command": "~/.claude/statusline.sh"
+    "command": "~/.claude/statusline.sh",
+    "refreshInterval": 5
   }
 }
 ```
