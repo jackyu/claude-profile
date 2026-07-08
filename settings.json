@@ -78,8 +78,10 @@
     ]
   },
   // 狀態列自定義 (顯示於終端機底部)
+  // refreshInterval: 事件驅動之外每 N 秒定時重跑（單位秒），idle 時分支/時間才會更新
   "statusLine": {
     "type": "command",
-    "command": "~/.claude/statusline.sh"
+    "command": "~/.claude/statusline.sh",
+    "refreshInterval": 5
   }
 }
