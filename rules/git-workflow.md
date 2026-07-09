@@ -27,9 +27,13 @@ Git 工作流程與 commit 規範。
 - `feature/<ticket-id>-<short-description>`
 - `fix/<ticket-id>-<short-description>`
 - `hotfix/<description>`
+- 功能開發在獨立 worktree 分支進行，絕不直接 commit 到 main 或 release 分支（rc/*）
 
 ## MR / PR
 
 - 標題遵守 conventional commits 格式
 - 附上變更摘要與測試結果
 - 自我 review 一次再發 MR
+- 開 MR 前跑完整品質關卡（lint、type-check、test、build）；既有失敗另開 infra 修復 MR，不混入功能 MR
+- rebase 優先於 merge，保持線性歷史；分支已分歧時，改寫歷史前先問過
+- 未經使用者明確確認，絕不 force-push、也不推共用分支
