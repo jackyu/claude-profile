@@ -4,7 +4,7 @@
 
 ## 專案結構
 
-- `settings.json` — Claude Code 全域設定（權限、hooks、狀態列、output style）
+- `settings.json` — `~/.claude/settings.json` 的去敏範本（權限、hooks、plugins、狀態列、output style），換機重建的參照依據
 - `rules/` — 前端開發規範集合
 - `output-styles/` — 自訂 output style（回應語氣規範，進 system prompt）
 - `hooks/` — Claude Code hooks 集合（coverage-check 等）
@@ -17,6 +17,7 @@
 - 每個檔案聚焦一個維度，不混合主題
 - 使用繁體中文撰寫規範內容
 - `settings.json` 含註解說明，修改時保留註解
+- 修改 `~/.claude/settings.json` 後同步回範本；機敏值（webhook、公司內部 URL）一律用佔位符，不入版控
 
 ## Commit 規範
 

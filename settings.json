@@ -1,36 +1,26 @@
 {
+  // ============================================================
+  // 本檔為 ~/.claude/settings.json 的「去敏範本」（換機重建的參照依據）
+  // - 結構與實機一致；機敏值（webhook、公司內部 URL）以佔位符替代，見各處註解
+  // - 路徑一律用 $HOME 寫法，實機可直接沿用
+  // - 修改實機設定後，記得同步回這份範本（去敏後再 commit）
+  // ============================================================
+
   // 環境變數
   "env": {
     "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
+    // Mattermost MR review 通知 webhook（機敏）：實機填真實 URL，勿 commit
+    "MM_MR_REVIEW_WEBHOOK": "https://<your-mattermost>/hooks/<webhook-id>"
   },
 
-  // 基本偏好設定
-  "language": "traditional chinese",
-  "effortLevel": "medium",
-  "alwaysThinkingEnabled": true,
-  "showTurnDuration": true,
-
-  // 回應語氣（output-styles/communication-style.md）：結論先行、白話精簡
-  // 值填 style 的 name（非檔名）；改動後需重啟 session 或 /clear 才生效
-  "outputStyle": "communication-style",
-
-  // 權限管理：自動允許常用指令，減少彈窗擾人
+  // 權限管理：allow 自動放行、ask 強制詢問、deny 一律拒絕
   "permissions": {
     "allow": [
-      "Bash(git status*)",
-      "Bash(git log *)",
-      "Bash(git diff *)",
-      "Bash(git show *)",
-      "Bash(git branch *)",
-      "Bash(git stash *)",
-      "Bash(git add *)",
-      "Bash(git commit *)",
-      "Bash(git config *)",
-      "Bash(git rev-parse *)",
-      "Bash(git fetch *)",
-      "Bash(git remote *)",
-      "Bash(ls *)",
-      "Bash(which *)",
+      "Bash(git:*)",
+      "Bash(mkdir:*)",
+      "Bash(ls:*)",
+      "Bash(cat:*)",
+      "Bash(which:*)",
       "Bash(bash -n *)",
       "Bash(node --check *)",
       "Skill(opsx:*)",
@@ -38,6 +28,13 @@
       "Bash(pnpm jest *)",
       "Bash(pnpm test *)",
       "Read(~/.zshrc)",
+      // GitLab 唯讀腳本與 mr-review 迴圈輔助腳本
+      "Bash(~/.claude/scripts/gitlab/mr-list-for-review.sh:*)",
+      "Bash(~/.claude/schedules/mr-review-by-loop/notify-mattermost.sh:*)",
+      "Bash(~/.claude/schedules/mr-review-by-loop/update-state.sh:*)",
+      "Bash(~/.claude/schedules/mr-review-by-loop/resolve-project.sh:*)",
+      "Bash(~/.claude/skills/_shared/fe-mr-common/scripts/mr-context.sh:*)",
+      "Bash(~/Projects/claude-skills/skills/_shared/fe-mr-common/scripts/mr-context.sh:*)",
       "mcp__pencil"
     ],
     "deny": [
@@ -45,12 +42,155 @@
       "Read(./.env)",
       "Read(./secrets/**)"
     ],
+    // GitLab 寫入類腳本一律先問過
+    "ask": [
+      "Bash(~/.claude/scripts/gitlab/mr-note.sh:*)",
+      "Bash(~/.claude/scripts/gitlab/mr-reply.sh:*)",
+      "Bash(~/.claude/scripts/gitlab/mr-resolve.sh:*)",
+      "Bash(~/.claude/scripts/gitlab/mr-approve.sh:*)",
+      "Bash(~/.claude/scripts/gitlab/issue-create.sh:*)",
+      "Bash(~/.claude/scripts/gitlab/issue-note.sh:*)",
+      "Bash(~/.claude/scripts/gitlab/mr-create.sh:*)",
+      "Bash(~/.claude/scripts/gitlab/mr-update.sh:*)"
+    ],
     "defaultMode": "plan"
   },
+
+  "model": "claude-fable-5[1m]",
+
+  // Hooks 總覽：
+  // - 制度性 hooks（CLAUDE.md 鐵律配套）：write-ledger / claim-audit / anchor-reinject /
+  //   coverage-check / enforce-mr-generator / gitlab-write-gate / notify-complete
+  // - DynamicIsland 通知（島式 UI）：island-hook.sh（App 內建）＋ dynamic-island-hook（個人版），
+  //   幾乎掛在所有事件上，只做通知、無副作用
   "hooks": {
-    // 強制 MR 描述經 fe-mr-generator 產生（驗隱形標記，缺則擋下建立 MR）
+    "Notification": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Applications/DynamicIsland.app/Contents/Resources/island-hook.sh",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CC_ISLAND_STOP_TIMEOUT=30 \"$HOME/.claude/hooks/dynamic-island-hook\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PermissionDenied": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CC_ISLAND_STOP_TIMEOUT=30 \"$HOME/.claude/hooks/dynamic-island-hook\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PermissionRequest": [
+      {
+        "matcher": "Bash|Edit|Write|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Applications/DynamicIsland.app/Contents/Resources/island-hook.sh",
+            "timeout": 30
+          }
+        ]
+      },
+      {
+        "matcher": "Bash|Edit|Write|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CC_ISLAND_STOP_TIMEOUT=30 \"$HOME/.claude/hooks/dynamic-island-hook\"",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "PostCompact": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CC_ISLAND_STOP_TIMEOUT=30 \"$HOME/.claude/hooks/dynamic-island-hook\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        // 記錄實際寫入的檔案（供 Stop 時 claim-audit.sh 對帳）
+        "matcher": "Write|Edit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/.claude/hooks/write-ledger.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash|Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Applications/DynamicIsland.app/Contents/Resources/island-hook.sh",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "Bash|Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CC_ISLAND_STOP_TIMEOUT=30 \"$HOME/.claude/hooks/dynamic-island-hook\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CC_ISLAND_STOP_TIMEOUT=30 \"$HOME/.claude/hooks/dynamic-island-hook\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CC_ISLAND_STOP_TIMEOUT=30 \"$HOME/.claude/hooks/dynamic-island-hook\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
     "PreToolUse": [
       {
+        // 強制 MR 描述經 fe-mr-generator 產生（驗隱形標記，缺則擋下建立 MR）
         "matcher": "mcp__gitLab__create_merge_request|mcp__gitLab__update_merge_request",
         "hooks": [
           {
@@ -58,20 +198,175 @@
             "command": "$HOME/.claude/hooks/enforce-mr-generator.sh"
           }
         ]
+      },
+      {
+        // 攔截繞過 ask 清單直呼 GitLab 寫入 API 的 Bash 指令
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/.claude/hooks/gitlab-write-gate.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Applications/DynamicIsland.app/Contents/Resources/island-hook.sh",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CC_ISLAND_STOP_TIMEOUT=30 \"$HOME/.claude/hooks/dynamic-island-hook\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CC_ISLAND_STOP_TIMEOUT=30 \"$HOME/.claude/hooks/dynamic-island-hook\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CC_ISLAND_STOP_TIMEOUT=30 \"$HOME/.claude/hooks/dynamic-island-hook\"",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        // compaction / 新 session 後重注 IMPLEMENTATION_PLAN.md
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/.claude/hooks/anchor-reinject.sh",
+            "timeout": 10
+          }
+        ]
       }
     ],
     "Stop": [
       {
+        // 對帳 write-ledger 記錄的檔案，缺檔或空檔擋下結束
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/.claude/hooks/claim-audit.sh",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Applications/DynamicIsland.app/Contents/Resources/island-hook.sh",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "",
         "hooks": [
           {
             "type": "command",
             "command": "$HOME/.claude/hooks/notify-complete.sh"
           }
         ]
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CC_ISLAND_STOP_TIMEOUT=30 \"$HOME/.claude/hooks/dynamic-island-hook\"",
+            "timeout": 35
+          }
+        ]
+      }
+    ],
+    "StopFailure": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CC_ISLAND_STOP_TIMEOUT=30 \"$HOME/.claude/hooks/dynamic-island-hook\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Applications/DynamicIsland.app/Contents/Resources/island-hook.sh",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CC_ISLAND_STOP_TIMEOUT=30 \"$HOME/.claude/hooks/dynamic-island-hook\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Applications/DynamicIsland.app/Contents/Resources/island-hook.sh",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CC_ISLAND_STOP_TIMEOUT=30 \"$HOME/.claude/hooks/dynamic-island-hook\"",
+            "timeout": 5
+          }
+        ]
       }
     ],
     "TaskCompleted": [
       {
+        // 測試覆蓋率檢查（僅提示不阻擋；門檻 line 70／branch 60）
+        "matcher": "",
         "hooks": [
           {
             "type": "command",
@@ -79,13 +374,111 @@
           }
         ]
       }
+    ],
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Applications/DynamicIsland.app/Contents/Resources/island-hook.sh",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CC_ISLAND_STOP_TIMEOUT=30 \"$HOME/.claude/hooks/dynamic-island-hook\"",
+            "timeout": 5
+          }
+        ]
+      }
     ]
   },
-  // 狀態列自定義 (顯示於終端機底部)
+
+  // 狀態列自定義（顯示於終端機底部）
   // refreshInterval: 事件驅動之外每 N 秒定時重跑（單位秒），idle 時分支/時間才會更新
   "statusLine": {
     "type": "command",
     "command": "~/.claude/statusline.sh",
     "refreshInterval": 5
-  }
+  },
+
+  // Plugins（false = 已安裝但停用）
+  "enabledPlugins": {
+    "claude-md-management@claude-plugins-official": true,
+    "code-review@claude-plugins-official": true,
+    "code-simplifier@claude-plugins-official": true,
+    "document-skills@anthropic-agent-skills": true,
+    "everything-claude-code@everything-claude-code": false,
+    "example-skills@anthropic-agent-skills": false,
+    "frontend-design@claude-plugins-official": true,
+    // iso27001-toolkit 來自公司內部 marketplace（見下方 extraKnownMarketplaces 註解）
+    "iso27001-toolkit@iso27001-2026": true,
+    "playwright@claude-plugins-official": false,
+    "pr-review-toolkit@claude-plugins-official": true,
+    "ralph-loop@claude-plugins-official": false,
+    "security-guidance@claude-plugins-official": true,
+    "sentry@claude-plugins-official": true,
+    "skill-creator@claude-plugins-official": true,
+    "superpowers@claude-plugins-official": false,
+    "telegram@claude-plugins-official": true,
+    "codex@openai-codex": true,
+    "heptabase@heptabase-cli-skills": true,
+    "ponytail@ponytail": false,
+    "notion@claude-plugins-official": true,
+    "i-have-adhd@i-have-adhd": true
+  },
+
+  // 額外 marketplace 來源
+  // 注意：公司內部 marketplace「iso27001-2026」（來源為公司 GitLab 私有 repo）
+  // 不入公開 repo，換機時自行補上：
+  //   "iso27001-2026": { "source": { "source": "git", "url": "<公司 GitLab repo URL>", "path": "<本地 clone 路徑>" } }
+  "extraKnownMarketplaces": {
+    "openai-codex": {
+      "source": {
+        "source": "github",
+        "repo": "openai/codex-plugin-cc"
+      }
+    },
+    "heptabase-cli-skills": {
+      "source": {
+        "source": "github",
+        "repo": "heptameta/heptabase-cli-skills"
+      }
+    },
+    "ponytail": {
+      "source": {
+        "source": "github",
+        "repo": "DietrichGebert/ponytail"
+      }
+    },
+    "i-have-adhd": {
+      "source": {
+        "source": "github",
+        "repo": "ayghri/i-have-adhd"
+      }
+    }
+  },
+
+  // 基本偏好設定
+  "language": "traditional chinese",
+  // 回應語氣（output-styles/communication-style.md）：結論先行、白話精簡
+  // 值填 style 的 name（非檔名）；改動後需重啟 session 或 /clear 才生效
+  "outputStyle": "communication-style",
+  "alwaysThinkingEnabled": true,
+  "effortLevel": "high",
+  "advisorModel": "opus",
+  "tui": "fullscreen",
+  "skipDangerousModePermissionPrompt": true,
+  "skipWorkflowUsageWarning": true,
+  "theme": "dark-daltonized",
+  "showTurnDuration": true,
+  "terminalProgressBarEnabled": true,
+  "remoteControlAtStartup": true,
+  "agentPushNotifEnabled": true,
+  "skipAutoPermissionPrompt": true
 }
