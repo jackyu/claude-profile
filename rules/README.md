@@ -29,7 +29,8 @@
 | `seo.md` | Next.js Metadata API、Open Graph、Structured Data、技術 SEO |
 | `git-workflow.md` | Conventional Commits、分支管理、MR/PR 流程 |
 | `git-worktree.md` | Git Worktree 目錄配置、命名與清理規範 |
-| `communication-style.md` | AI 回答的語氣與語句表達 — 白話化、結論先行、術語補註 |
+
+> 語氣與表達規範已遷移為 output style（`output-styles/communication-style.md`），直接進 system prompt、回應風格更穩定，不再放 rules。
 
 ## 設計原則
 

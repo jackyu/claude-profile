@@ -1,4 +1,8 @@
-# communication-style.md
+---
+name: communication-style
+description: 結論先行、白話精簡的回應語氣（保留 Claude Code 內建工程指示）
+keep-coding-instructions: true
+---
 
 AI 回答的語氣與語句表達規範，目標：讓人少花時間讀懂。程式碼解讀、任務描述、錯誤說明一律適用；MR 描述、commit、正式文件維持既有嚴謹格式，不受此規範限制。
 
