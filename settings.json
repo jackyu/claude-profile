@@ -10,6 +10,10 @@
   "alwaysThinkingEnabled": true,
   "showTurnDuration": true,
 
+  // 回應語氣（output-styles/communication-style.md）：結論先行、白話精簡
+  // 值填 style 的 name（非檔名）；改動後需重啟 session 或 /clear 才生效
+  "outputStyle": "communication-style",
+
   // 權限管理：自動允許常用指令，減少彈窗擾人
   "permissions": {
     "allow": [

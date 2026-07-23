@@ -4,8 +4,9 @@
 
 ## 專案結構
 
-- `settings.json` — Claude Code 全域設定（權限、hooks、狀態列）
-- `rules/` — 前端開發規範集合（15 個 .md 檔案）
+- `settings.json` — Claude Code 全域設定（權限、hooks、狀態列、output style）
+- `rules/` — 前端開發規範集合
+- `output-styles/` — 自訂 output style（回應語氣規範，進 system prompt）
 - `hooks/` — Claude Code hooks 集合（coverage-check 等）
 - `status-line/` — 自訂終端狀態列腳本與安裝工具
 - `CLAUDE.md` — 本檔案，專案層級指令
