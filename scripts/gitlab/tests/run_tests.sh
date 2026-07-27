@@ -95,6 +95,91 @@ echo "=== mr-resolve.sh ==="
 }
 
 echo ""
+echo "=== mr-discussion.sh ==="
+{
+  # 顯式 shas + new_line
+  set_curl_response '{"id":900}' 201
+  output=$(run_script mr-discussion.sh "group/project" 277 \
+    --file "src/a.ts" --new-line 42 --body "測試註解" \
+    --base-sha "aaa" --start-sha "bbb" --head-sha "ccc")
+  curl_call=$(get_last_curl_call)
+  assert_contains "posts to discussions endpoint" "merge_requests/277/discussions" "$curl_call"
+  assert_contains "includes position_type text" "position_type" "$curl_call"
+  assert_contains "includes base_sha" "aaa" "$curl_call"
+  assert_contains "includes new_path" "src/a.ts" "$curl_call"
+  assert_contains "includes new_line" "\"new_line\":42" "$curl_call"
+  assert_not_contains "no old_line when new-line given" "old_line" "$curl_call"
+
+  # --old-line 變體
+  set_curl_response '{"id":901}' 201
+  output=$(run_script mr-discussion.sh "group/project" 277 \
+    --file "src/b.ts" --old-line 10 --body "刪除原因" \
+    --base-sha "aaa" --start-sha "bbb" --head-sha "ccc")
+  curl_call=$(get_last_curl_call)
+  assert_contains "includes old_line" "\"old_line\":10" "$curl_call"
+  assert_not_contains "no new_line when old-line given" "new_line" "$curl_call"
+
+  # 省略 shas -> 先 GET 再 POST
+  set_curl_response '{"iid":277,"diff_refs":{"base_sha":"gaa","start_sha":"gbb","head_sha":"gcc"}}' 200
+  output=$(run_script mr-discussion.sh "group/project" 277 \
+    --file "src/c.ts" --new-line 5 --body "取自 diff_refs")
+  curl_call=$(get_last_curl_call)
+  assert_contains "GET fetches MR for diff_refs" "GET" "$curl_call"
+  assert_contains "GET endpoint correct" "merge_requests/277" "$curl_call"
+  assert_contains "POST uses fetched base_sha" "gaa" "$curl_call"
+  assert_contains "POST uses fetched start_sha" "gbb" "$curl_call"
+  assert_contains "POST uses fetched head_sha" "gcc" "$curl_call"
+
+  # HTTP 400 -> stderr 含 HTTP 400 與 diff hunk 提示（用顯式 shas 跳過 GET）
+  set_curl_response '{"message":"400 Bad Request"}' 400
+  output=$(run_script mr-discussion.sh "group/project" 277 \
+    --file "src/d.ts" --new-line 999 --body "行號錯誤" \
+    --base-sha "aaa" --start-sha "bbb" --head-sha "ccc" || true)
+  stderr=$(get_stderr)
+  assert_contains "stderr shows HTTP 400" "HTTP 400" "$stderr"
+  assert_contains "stderr shows diff hunk hint" "diff hunk" "$stderr"
+
+  # 參數驗證：缺兩個行號 flag
+  output=$(run_script mr-discussion.sh "group/project" 277 --file "src/e.ts" --body "x" 2>/dev/null || true)
+  stderr=$(get_stderr)
+  assert_contains "errors when no line flag given" "new-line" "$stderr"
+
+  # 參數驗證：同時給兩個行號 flag
+  output=$(run_script mr-discussion.sh "group/project" 277 --file "src/e.ts" --new-line 1 --old-line 2 --body "x" 2>/dev/null || true)
+  stderr=$(get_stderr)
+  assert_contains "errors when both line flags given" "only one" "$stderr"
+
+  # 參數驗證：缺 positional
+  output=$(run_script mr-discussion.sh "group/project" 2>/dev/null || true)
+  stderr=$(get_stderr)
+  assert_contains "shows usage on missing args" "Usage:" "$stderr"
+
+  # body 加工
+  set_curl_response '{"id":902}' 201
+  output=$(run_script mr-discussion.sh "group/project" 277 \
+    --file "src/f.ts" --new-line 1 --body "純內容" \
+    --base-sha "aaa" --start-sha "bbb" --head-sha "ccc")
+  curl_call=$(get_last_curl_call)
+  assert_contains "body kept as-is" "純內容" "$curl_call"
+  assert_not_contains "no author-note prefix" "作者註" "$curl_call"
+  assert_contains "body suffixed with self-annotation marker" "mr:self-annotation" "$curl_call"
+
+  # 省略 shas，GET 失敗（如 404）-> 自訂錯誤訊息、exit 1
+  set_curl_response '{"message":"404 Not Found"}' 404
+  output=$(run_script mr-discussion.sh "group/project" 277 \
+    --file "src/g.ts" --new-line 1 --body "取不到 diff_refs" || true)
+  stderr=$(get_stderr)
+  assert_contains "GET failure shows custom error" "failed to fetch MR" "$stderr"
+
+  # 省略 shas，GET 成功但 diff_refs 缺欄位（// empty 避免拿到字面 "null"）-> 空值報錯
+  set_curl_response '{"iid":277,"diff_refs":{"start_sha":"gbb","head_sha":"gcc"}}' 200
+  output=$(run_script mr-discussion.sh "group/project" 277 \
+    --file "src/h.ts" --new-line 1 --body "diff_refs 不完整" || true)
+  stderr=$(get_stderr)
+  assert_contains "missing diff_refs field errors out" "沒有 diff_refs" "$stderr"
+}
+
+echo ""
 echo "=== mr-approve.sh ==="
 {
   set_curl_response '{"id":277,"approved":true}' 201
