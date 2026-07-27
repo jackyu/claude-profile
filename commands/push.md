@@ -77,7 +77,19 @@ mcp__gitLab__list_merge_requests
 
 - 有 → 顯示 MR URL，詢問使用者：
   - a) 僅推送（不動 MR）
-  - b) 更新 description（呼叫 skill 重新產生並 `update_merge_request`）
+  - b) 更新 description 與 inline 自註解（呼叫 fe-mr-generator 重新產生，`mr-update.sh` 更新 description，並對既有 inline 自註解執行「主動汰換」）：
+    1. 依目前 `origin/<target>...HEAD` three-dot diff，由 fe-mr-generator 重新產生完整的 inline 註解清單
+    2. 用唯讀方式（MCP 或既有唯讀 script）讀取此 MR 既有的 discussions，篩出 body 含 `<!-- mr:self-annotation -->` 的 threads
+    3. 對每個「無人回覆」的舊自註解 thread：與新清單逐一比對 `(file, line, body)`
+       - 完全相同 → 保留，從待發清單移除（不重發）
+       - 對不上（行被改掉或內容更新）→ 呼叫 `mr-resolve.sh` 收掉該 thread
+    4. 「有人回覆過」的 thread 一律不動（已是 review 對話，不洗掉脈絡）；新清單中與其語意重複的項目略過，不重發
+    5. 依步驟 9 相同流程，發佈待發清單中剩餘的新註解（`diff_refs` 從 MCP 重新讀取此 MR 取得）
+
+    ```bash
+    ~/.claude/scripts/gitlab/mr-update.sh "<project>" <mr_iid> \
+      --description "<skill 產出（含標記）>"   # 亦可帶 --title / --draft / --dry-run
+    ```
   - c) 取消
 - 無 → 繼續步驟 6
 
@@ -116,26 +128,53 @@ mcp__gitLab__list_merge_requests
 
 Skill 會產出：
 - MR Title（依 Issue 狀況帶格式）
-- MR Description（五個區塊：關聯、為什麼、做了什麼、測試、截圖）
+- MR Description（四個區塊：關聯、為什麼要這樣做、概念地圖、截圖或錄影）
+- Inline 自註解清單（獨立 JSON code block，每則 `{file, new_line|old_line, body}`）
 
 ### 8. 建立 MR
 
-使用 MCP：
+使用 `mr-create.sh`（走 script 層：強制驗證 fe-mr-generator 標記、支援 `--dry-run`、互動時觸發 ask 確認）：
 
-```
-mcp__gitLab__create_merge_request
-  project_id: <解析結果>
-  source_branch: <current>
-  target_branch: <target>
-  title: <skill 產出，若 draft 則前綴 "Draft: ">
-  description: <skill 產出>
-  assignee_ids: [<self user id>]
-  labels: [<依分支前綴解析>]
-  remove_source_branch: true
-  squash: false
+```bash
+~/.claude/scripts/gitlab/mr-create.sh \
+  "<project path 或 id（git remote 解析）>" \
+  "<current>" \
+  "<target>" \
+  --title "<skill 產出的 title（勿手動加 Draft: 前綴）>" \
+  --description "<skill 產出的 description（必含標記 <!-- mr:fe-mr-generator -->）>" \
+  --assignee-ids "<self user id>" \
+  --labels "<依分支前綴解析，可省略>" \
+  # draft 時再加：--draft
 ```
 
-### 9. 回報結果
+- **description 必須來自步驟 7 的 fe-mr-generator**（含隱形標記）；缺標記腳本會 `exit 1`，需先跑 skill。
+- `--draft` → 腳本自動為 title 加 `Draft: ` 前綴，勿手動加。
+- `remove_source_branch: true`、`squash: false` 已內建於腳本。
+- 送出前可先加 `--dry-run` 檢視 payload（印出、不發射）。
+- 讀取類（list MR / users / labels）仍走 `mcp__gitLab__*`；只有「建立/更新 MR」下沉到 script 層。
+
+### 9. 發佈 inline 自註解（自動）
+
+從步驟 8 `mr-create.sh` 的回應中取出 `iid` 與 `diff_refs`（`base_sha` / `start_sha` / `head_sha`）。
+
+對步驟 7 skill 產出的 inline 註解清單（JSON，每則 `{file, new_line|old_line, body}`）逐則呼叫：
+
+```bash
+~/.claude/scripts/gitlab/mr-discussion.sh \
+  "<project>" <iid> \
+  --file "<file>" --new-line <n>   # 或改 --old-line <n>
+  --body "<body>" \
+  --base-sha "<diff_refs.base_sha>" --start-sha "<diff_refs.start_sha>" --head-sha "<diff_refs.head_sha>"
+```
+
+規則：
+- 註解清單為空 → 跳過本步驟
+- 單則呼叫失敗（例如行號不在 diff hunk）→ 記錄失敗，不中止，繼續下一則
+- 全部跑完後，若有失敗項目 → 彙整為一則整體留言（格式：`<file>:<line> — <body>` 逐行列出），呼叫 `mr-note.sh` 發佈作為 fallback
+- 回報「inline 自註解：成功 N 則／失敗 M 則」
+- 固定提醒：「自註解為 resolvable thread，若專案要求討論全部 resolve 才能 merge，請 review 完自行 resolve」
+
+### 10. 回報結果
 
 成功後在訊息中明確顯示：
 
@@ -148,10 +187,12 @@ Source:   <current>
 Assignee: <username>
 Labels:   <labels>
 Draft:    <true/false>
+Inline 自註解：成功 <N> 則／失敗 <M> 則
 
 下一步建議：
 - 補上截圖（前端 UI 變更必附前後對比）
 - 指定 reviewer
+- 若專案要求討論全部 resolve 才能 merge，review 完自行 resolve inline 自註解
 - 等 CI 通過後 mark as ready（若為 draft）
 ```
 
@@ -168,6 +209,8 @@ Draft:    <true/false>
 | Label 不存在於專案 | 移除該 label 並告知使用者 |
 | 無法解析 Issue ID | 透過 AskUserQuestion 詢問（可留空） |
 | GitLab API 失敗 | 顯示錯誤訊息，告知使用者可手動開 MR |
+| inline 自註解發佈失敗（單則） | 記錄、繼續其餘、最後彙整成 mr-note.sh fallback 留言、回報清單 |
+| GitLab 寫入被 write-gate 擋下（專案不在 allowlist） | 顯示 hook 的 deny 訊息，提示將專案加入 `~/.claude/schedules/mr-review-by-loop/projects.json`，或改用 `--dry-run` 先驗證 |
 
 ## 範例
 
@@ -183,6 +226,7 @@ Draft:    <true/false>
    - Label: `bug`
    - Assignee: `jackyu`
    - Issue ID: 從分支名抓不到 → 詢問使用者 → 使用者回 `#42`
-7. 呼叫 `fe-mr-generator` 產 title + description
+7. 呼叫 `fe-mr-generator` 產 title + description + inline 自註解清單
 8. 建立 MR
-9. 回報 URL
+9. 逐則發佈 inline 自註解
+10. 回報 URL

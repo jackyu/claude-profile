@@ -14,9 +14,11 @@
 
 ## 命名慣例
 
-- Component：PascalCase（`UserProfileCard.tsx`）
-- Hook：camelCase 且以 `use` 開頭（`useAuth.ts`）
-- Utility：camelCase（`formatDate.ts`）
+**檔名一律 kebab-case**（`user-profile-card.tsx`、`use-auth.ts`、`format-date.ts`），以 fe-arch skill 為準。以下是**識別字（程式碼內的名稱）**慣例：
+
+- Component：PascalCase（`UserProfileCard`）
+- Hook：camelCase 且以 `use` 開頭（`useAuth`）
+- Utility：camelCase（`formatDate`）
 - 常數：UPPER_SNAKE_CASE（`API_BASE_URL`）
 - Type / Interface：PascalCase，不加 `I` 前綴
 

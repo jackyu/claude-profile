@@ -127,29 +127,38 @@ retry ~/.claude/scripts/gitlab/mr-list-for-review.sh "{project_path}"
 
 ### 6. 通知 Mattermost + 更新狀態
 
-對每個剛產出的 MR，組一段 Markdown 並推送（用韌性原則的 `retry` 包起來）：
+對每個剛產出的 MR，組好 Markdown，經 **HTML 產物證據 gate** 推送——
+`notify-review-result.sh` 會先驗證 HTML 報告存在且 >1KB，才推成功通知；
+否則改推錯誤通知並回非 0（防止「HTML 沒產出卻宣稱完成」）：
 
 ```bash
-retry() { local n=1 d=2; until "$@"; do [ $n -ge 3 ] && return 1; sleep $d; n=$((n+1)); d=$((d*2)); done; }
-retry ~/.claude/schedules/mr-review-by-loop/notify-mattermost.sh "<markdown>"
+~/.claude/schedules/mr-review-by-loop/notify-review-result.sh \
+  "<html 絕對路徑，如 $ROOT/reports/{repo}/mr-review-{iid}-{short_sha}.html>" \
+  "<success_markdown>" \
+  "[{display_name}] MR !<iid>"
 ```
 
-Markdown 內容建議：
+`success_markdown` 內容建議：
 - 開頭標明 `**[{display_name}]** 🆕 新的待審 MR` 或 `🔄 有新 commit，已重審`
 - MR 標題 + `web_url`（可點進 GitLab）
 - 合併建議結論 + severity 計數（如 🔴1 🟠2 🟡3 🔵0 ⚪0）
-- **HTML 報告路徑**，用 `file://` 開頭的絕對路徑（讓我點開即用 browser 閱讀），
-  例如 `file:///Users/.../reports/web-app/mr-review-123-ab12cd34.html`
+- **HTML 報告路徑**，用 `file://` 開頭的絕對路徑，例如
+  `file:///Users/.../reports/web-app/mr-review-123-ab12cd34.html`
 
-通知成功後，更新狀態檔（用 helper，immutable 合併、不破壞其他條目；同樣用 `retry` 包起來）：
+依 `notify-review-result.sh` 的 exit code 決定是否更新狀態：
 
 ```bash
 retry() { local n=1 d=2; until "$@"; do [ $n -ge 3 ] && return 1; sleep $d; n=$((n+1)); d=$((d*2)); done; }
-retry ~/.claude/schedules/mr-review-by-loop/update-state.sh {repo} <iid> <head_sha>
+if ~/.claude/schedules/mr-review-by-loop/notify-review-result.sh "<html_abs>" "<success_markdown>" "[{display_name}] MR !<iid>"; then
+  # exit 0：HTML 產物存在且已成功通知 → 更新狀態檔（immutable 合併）
+  retry ~/.claude/schedules/mr-review-by-loop/update-state.sh {repo} <iid> <head_sha>
+else
+  # exit 2（HTML 未產出/過小）或 exit 1（通知重試後仍失敗）→ 不更新狀態，下一輪重審
+  跳過此 MR
+fi
 ```
 
-**若通知重試後仍失敗** → **不要更新該 MR 的狀態檔**（讓它下一輪重新通知），跳過此 MR 繼續處理
-其餘 MR，最後仍照常走到步驟 7。
+**任何情況都不中止本輪**，最後仍照常走到步驟 7。
 
 > 不要自動在 MR 上發 comment。是否回覆 review 一律由我人工決定後，另用
 > `~/.claude/scripts/gitlab/mr-note.sh` / `mr-reply.sh` 處理。

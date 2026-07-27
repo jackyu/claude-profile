@@ -6,7 +6,7 @@
 
 - 每個 API endpoint 封裝成獨立的 custom hook（如 `useGetUser`、`useGetOrders`）
 - Query Key 使用陣列格式並保持一致：`['users', userId]`、`['orders', { status }]`
-- Query Key 統一在 `services/queryKeys.ts` 集中管理
+- Query Key 由各 feature 的 key factory 產出（`features/{feature}/api/keys.ts`），跨 feature invalidate 時 import owner feature 的 factory，禁止手拼字串
 - 使用 `queryOptions()` helper 建立可重用的 query 設定
 
 ## Mutation 規範
@@ -17,7 +17,7 @@
 
 ## API 層
 
-- API 呼叫函式放在 `services/` 目錄，與 hook 分離
+- API 呼叫函式與其 hook 放在 `features/{feature}/api/`，一操作一檔（fetch + `queryOptions` + hook 三層）；檔案位置細節以 fe-arch skill 為準
 - 使用 `fetch` 或 `ky` / `axios`，統一 base URL 與 interceptor
 - Response 用 Zod schema 驗證，確保型別安全
 - 錯誤統一用自訂 `ApiError` class 包裝

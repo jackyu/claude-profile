@@ -6,7 +6,7 @@
 
 - 每個元件至少要有基本 render 測試
 - 測試行為（使用者看到什麼、點了什麼），不測實作細節
-- 測試檔案放在同層目錄：`ComponentName.test.tsx`
+- 測試檔案放在被測檔案同層的 `__tests__/` 目錄：`__tests__/component-name.test.tsx`（檔名 kebab-case，與被測檔同名）
 - 用 `describe` 分群組，`it` 描述用英文、以動詞開頭
 
 ## Vitest 設定
