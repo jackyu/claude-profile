@@ -2,28 +2,16 @@
 
 Next.js App Router 專案結構規範。
 
-## 目錄結構
+## 檔案放置一律以 fe-arch skill 為準
 
-```
-src/
-├── app/                  # App Router 路由與頁面
-│   ├── (auth)/           # Route Group
-│   ├── api/              # Route Handlers
-│   └── layout.tsx
-├── components/
-│   ├── ui/               # 通用 UI 元件（Button, Modal, Input）
-│   └── features/         # 業務功能元件（UserCard, OrderTable）
-├── hooks/                # 自訂 Hooks
-├── lib/                  # 工具函式、設定、第三方封裝
-├── services/             # API 呼叫層（搭配 React Query）
-├── stores/               # 全域狀態（Zustand 等）
-├── types/                # 共用型別定義
-└── constants/            # 常數與 enum
-```
+**「這個檔案該放哪」不在本檔定義**——建立任何新檔案（元件、hook、API 層、測試、types）前，載入 `fe-arch` skill 走其決策流程（Phase 1–6），完整目錄地圖見該 skill 的 `references/architecture-reference.md`。
 
-## 規則
+本檔只保留與位置無關的通則，避免兩份規範打架。
 
-- 頁面邏輯寫在 `app/` 內的 `page.tsx`，不在頁面檔放業務元件
-- 共用元件放 `components/ui/`，功能元件放 `components/features/`
-- 每個元件資料夾可包含 `index.tsx`、`*.test.tsx`、`*.stories.tsx`
+## 通則
+
+- 頁面邏輯寫在 `app/` 內的 `page.tsx`，`page.tsx` 只做組裝（薄殼），不放業務邏輯
 - Server Component 為預設，需要互動時才加 `'use client'`
+- 元件主檔用具名檔案（`user-card.tsx`），`index.ts` 只做 re-export，不拿 `index.tsx` 當主檔
+- 測試檔放在被測檔案同層的 `__tests__/` 目錄；E2E 例外，放專案根 `e2e/`
+- fe-arch 未涵蓋的兩類：全域狀態（Zustand 等）放 `src/stores/`、跨 feature 常數放 `src/constants/`；只有單一 feature 用的則留在該 feature 內

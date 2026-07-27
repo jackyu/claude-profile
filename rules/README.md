@@ -22,7 +22,9 @@
 | `html-semantics.md` | 語意化 HTML 標籤、無障礙 (a11y)、表單結構 |
 | `component-patterns.md` | React 元件撰寫、狀態管理、Server/Client Component |
 | `data-fetching.md` | React Query v5 資料請求、快取管理、API 層設計 |
+| `response-transform.md` | API 回應轉換的 immutable 原則，禁止 mutate 原始物件 |
 | `error-handling.md` | Error Boundary、API 錯誤、表單驗證、日誌 |
+| `testing.md` | 測試總則 — 依 lockfile 裁決 Jest / Vitest 選型，共通原則與覆蓋率門檻 |
 | `testing-vitest.md` | Vitest 測試規範與覆蓋率目標 |
 | `testing-jest.md` | Jest 測試規範與覆蓋率目標 |
 | `security.md` | 環境變數、資料驗證、認證授權、依賴安全 |

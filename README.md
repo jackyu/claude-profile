@@ -11,7 +11,7 @@
 │   ├── spec.md          # /spec 規格逼問到產出開發 issue
 │   ├── push.md          # /push 推送並開立 MR
 │   └── auto-review.md   # /auto-review 監聽 MR 自動審查
-├── rules/               # 前端開發規範（15 個 .md 檔案）
+├── rules/               # 前端開發規範（17 個 .md 檔案）
 │   ├── README.md        # Rules 檔案總覽與使用說明
 │   └── *.md             # 各維度規範
 ├── hooks/               # Claude Code hooks 集合

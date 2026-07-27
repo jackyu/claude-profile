@@ -10,7 +10,7 @@ TypeScript 使用規範。
 
 ## 型別定義
 
-- 共用型別放 `types/` 目錄，按領域分檔（`types/user.ts`）
+- 型別跟著它描述的資料走：feature 內的放 `features/{feature}/types/`，跨 feature 的領域型別放領域 feature 的 `types/`（位置以 fe-arch skill 為準）
 - API Response 型別從 Zod schema 用 `z.infer<>` 推導
 - 元件 Props 用 `interface`，其他場景 `type` 和 `interface` 皆可
 - 善用 `as const`、`satisfies`、Discriminated Union
