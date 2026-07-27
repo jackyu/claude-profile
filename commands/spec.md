@@ -48,7 +48,7 @@ argument-hint: "[PM issue URL | 需求描述 | 留空從對話起手]"
 grep -qxF '.claude/specs/' .gitignore || printf '.claude/specs/\n' >> .gitignore
 ```
 
-後續每個關卡都讀寫這份檔，它就是 grill ↔ fe-issue 之間的正式接口。
+後續每個關卡都讀寫這份檔，它就是 grill ↔ fe-issue 之間的正式介面。
 
 ### 2. 模糊就先 brainstorming
 

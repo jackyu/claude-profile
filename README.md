@@ -42,7 +42,7 @@
 | 指令 | 功能 |
 |------|------|
 | `/start` | 依任務描述自動建立 git worktree 與分支，並切換進入開發環境 |
-| `/spec` | 規格逼問到產出前端技術 issue 一條龍（brainstorming → grill → fe-issue），決議落地 spec 檔、附驗收 gate 與可選 codex 審查 |
+| `/spec` | 規格逼問到產出前端技術 issue 一條龍（brainstorming → grill → fe-issue），決議寫進 spec 檔、附驗收 gate 與可選 codex 審查 |
 | `/push` | 推送當前分支至遠端並建立 GitLab MR（含 title、description、label、assignee） |
 | `/auto-review` | 監聽目前 repo 對應的 GitLab 專案新/更新 MR，自動產出 HTML review 並推 Mattermost 通知（自帶迴圈） |
 
