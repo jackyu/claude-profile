@@ -4,7 +4,7 @@
 
 ## Next.js Error Boundary
 
-- 每個路由段落提供 `error.tsx`，全域提供 `global-error.tsx` 兜底
+- 每個路由段落提供 `error.tsx`，漏接的錯誤由全域 `global-error.tsx` 接住
 - `not-found.tsx` 處理 404 頁面
 
 ## API 錯誤處理
