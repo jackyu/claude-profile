@@ -35,6 +35,28 @@ if [[ -z "$GITLAB_API_URL" || "$GITLAB_API_URL" == "null" ]]; then
   exit 1
 fi
 
+# Strip --dry-run from argv, set DRY_RUN accordingly.
+# Usage: parse_common_flags "$@"; set -- ${PARSED_ARGS[@]+"${PARSED_ARGS[@]}"}
+parse_common_flags() {
+  DRY_RUN=0
+  PARSED_ARGS=()
+  local _pcf_arg
+  for _pcf_arg in "$@"; do
+    if [[ "$_pcf_arg" == "--dry-run" ]]; then
+      DRY_RUN=1
+    else
+      PARSED_ARGS+=("$_pcf_arg")
+    fi
+  done
+}
+
+# Print "Usage: $0 <usage>" (and an optional extra line) to stderr, then exit 1.
+usage_exit() {
+  echo "Usage: $0 $1" >&2
+  [[ -n "${2:-}" ]] && echo "$2" >&2
+  exit 1
+}
+
 # URL-encode a project path (e.g., "group/project" -> "group%2Fproject")
 # If input is numeric, pass through as-is
 encode_project() {

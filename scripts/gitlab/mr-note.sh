@@ -5,20 +5,10 @@
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 source "$SCRIPT_DIR/_config.sh"
 
-# --dry-run: strip flag, set DRY_RUN so _config.sh's gitlab_api prints instead of sending
-DRY_RUN=0
-_args=()
-for _a in "$@"; do
-  [[ "$_a" == "--dry-run" ]] && { DRY_RUN=1; continue; }
-  _args+=("$_a")
-done
-set -- ${_args[@]+"${_args[@]}"}
+parse_common_flags "$@"
+set -- ${PARSED_ARGS[@]+"${PARSED_ARGS[@]}"}
 
-if [[ $# -lt 3 ]]; then
-  echo "Usage: $0 <project_path_or_id> <mr_iid> <body> [--dry-run]" >&2
-  echo "Example: $0 'group/project' 277 'LGTM!'" >&2
-  exit 1
-fi
+[[ $# -lt 3 ]] && usage_exit "<project_path_or_id> <mr_iid> <body> [--dry-run]" "Example: $0 'group/project' 277 'LGTM!'"
 
 PROJECT=$(encode_project "$1")
 MR_IID="$2"
