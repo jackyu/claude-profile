@@ -21,7 +21,7 @@ description: 推送當前分支至遠端並建立 GitLab MR（含 title、descri
 - `--target <branch>` 或 `target=<branch>` 或中文「推到 rc/1.9.3」→ 覆寫 target
 - `--draft` 或「草稿」→ draft = true
 
-### 2. 前置檢查（任一失敗即中止）
+### 2. 前置檢查（任一失敗即中止，處理方式見下方「錯誤處理」表）
 
 ```bash
 # 當前分支
@@ -34,10 +34,6 @@ git status --porcelain
 git log --oneline origin/<target>..HEAD
 ```
 
-- 若分支為 `main` / `master` → 中止並提示
-- 若 working tree 不乾淨 → 列出未提交檔案，詢問是否 commit 後再推
-- 若無 commit 差異 → 中止並告知
-
 ### 3. 品質閘（有 `package.json` 才檢查，失敗阻擋）
 
 讀取 `package.json`，偵測以下 scripts 並依序執行：
@@ -48,9 +44,7 @@ git log --oneline origin/<target>..HEAD
 | `typecheck` 或 `type-check` | `npm run <script>` |
 | `test`（僅當存在且非 `jest --watch` 類型） | 視情況，可由使用者以參數 `--skip-test` 跳過 |
 
-任何一項失敗即中止，輸出錯誤摘要並回報：「先修正上述錯誤再 push」。
-
-若無 `package.json` 或無對應 script，跳過此步。
+任何一項失敗即中止（處理方式見下方「錯誤處理」表）。若無 `package.json` 或無對應 script，跳過此步。
 
 ### 4. Push 到遠端
 
@@ -62,7 +56,7 @@ git rev-parse --abbrev-ref --symbolic-full-name @{u} 2>/dev/null
 - 沒有 upstream → `git push -u origin <current>`
 - 有 upstream → `git push`
 
-失敗時回報原因（權限、protected branch 等）並中止。
+失敗時中止（處理方式見下方「錯誤處理」表）。
 
 ### 5. 檢查是否已有開啟中的 MR
 
@@ -77,14 +71,10 @@ mcp__gitLab__list_merge_requests
 
 - 有 → 顯示 MR URL，詢問使用者：
   - a) 僅推送（不動 MR）
-  - b) 更新 description 與 inline 自註解（呼叫 fe-mr-generator 重新產生，`mr-update.sh` 更新 description，並對既有 inline 自註解執行「主動汰換」）：
-    1. 依目前 `origin/<target>...HEAD` three-dot diff，由 fe-mr-generator 重新產生完整的 inline 註解清單
-    2. 用唯讀方式（MCP 或既有唯讀 script）讀取此 MR 既有的 discussions，篩出 body 含 `<!-- mr:self-annotation -->` 的 threads
-    3. 對每個「無人回覆」的舊自註解 thread：與新清單逐一比對 `(file, line, body)`
-       - 完全相同 → 保留，從待發清單移除（不重發）
-       - 對不上（行被改掉或內容更新）→ 呼叫 `mr-resolve.sh` 收掉該 thread
-    4. 「有人回覆過」的 thread 一律不動（已是 review 對話，不洗掉脈絡）；新清單中與其語意重複的項目略過，不重發
-    5. 依步驟 9 相同流程，發佈待發清單中剩餘的新註解（`diff_refs` 從 MCP 重新讀取此 MR 取得）
+  - b) 更新 description 與 inline 自註解（呼叫 fe-mr-generator 依目前 `origin/<target>...HEAD` three-dot diff 重新產生完整清單，`mr-update.sh` 更新 description，並對既有 inline 自註解執行「主動汰換」）：
+    - **汰換原則**：用唯讀方式（MCP 或既有唯讀 script）讀取此 MR 既有 discussions，篩出 body 含 `<!-- mr:self-annotation -->` 且「無人回覆」的舊自註解 thread，逐一與新清單比對 `(file, line, body)`——完全相同就保留、從待發清單移除；對不上（行被改或內容更新）就呼叫 `mr-resolve.sh` 收掉該 thread。
+    - 「有人回覆過」的 thread 一律不動，避免洗掉既有 review 對話；新清單中與其語意重複的項目也略過不重發。
+    - 待發清單處理完後，依步驟 9 相同流程發佈剩餘的新註解（`diff_refs` 從 MCP 重新讀取此 MR 取得）。
 
     ```bash
     ~/.claude/scripts/gitlab/mr-update.sh "<project>" <mr_iid> \
@@ -200,33 +190,20 @@ Inline 自註解：成功 <N> 則／失敗 <M> 則
 
 | 情境 | 處理 |
 |------|------|
-| 當前在 main/master | 中止，提示先 `/start` 開 worktree |
-| Working tree 不乾淨 | 列出檔案、詢問 commit 或 stash |
-| 無 commit 差異 | 中止，告知使用者無變更 |
-| 品質閘失敗 | 中止，輸出錯誤摘要 |
-| Push 被拒 | 顯示 git 錯誤訊息，中止 |
-| MR 已存在 | 詢問動作（僅推送 / 更新描述 / 取消） |
-| Label 不存在於專案 | 移除該 label 並告知使用者 |
-| 無法解析 Issue ID | 透過 AskUserQuestion 詢問（可留空） |
+| 當前在 main/master（步驟 2） | 中止，提示先 `/start` 開 worktree |
+| Working tree 不乾淨（步驟 2） | 列出檔案，詢問 commit 或 stash |
+| 無 commit 差異（步驟 2） | 中止，告知使用者無變更 |
+| 品質閘失敗（步驟 3） | 中止，輸出錯誤摘要，提示「先修正上述錯誤再 push」 |
+| Push 被拒（步驟 4） | 顯示 git 錯誤訊息（權限、protected branch 等），中止 |
+| MR 已存在（步驟 5） | 三選一，見步驟 5 |
+| Label 不存在於專案（步驟 6） | 見步驟 6 |
+| 無法解析 Issue ID（步驟 6） | 見步驟 6 |
 | GitLab API 失敗 | 顯示錯誤訊息，告知使用者可手動開 MR |
-| inline 自註解發佈失敗（單則） | 記錄、繼續其餘、最後彙整成 mr-note.sh fallback 留言、回報清單 |
+| inline 自註解發佈失敗（單則，步驟 9） | 見步驟 9 |
 | GitLab 寫入被 write-gate 擋下（專案不在 allowlist） | 顯示 hook 的 deny 訊息，提示將專案加入 `~/.claude/schedules/mr-review-by-loop/projects.json`，或改用 `--dry-run` 先驗證 |
 
 ## 範例
 
-輸入：`/push`
-
-流程：
-1. 解析：target=main、draft=false
-2. 當前分支 `bug/typo_of_page`、working tree 乾淨、相對 main 有 3 個 commit
-3. 跑 `npm run lint` + `npm run typecheck` 全部通過
-4. `git push -u origin bug/typo_of_page`
-5. 檢查 MR：無開啟中的 MR
-6. 解析 metadata：
-   - Label: `bug`
-   - Assignee: `jackyu`
-   - Issue ID: 從分支名抓不到 → 詢問使用者 → 使用者回 `#42`
-7. 呼叫 `fe-mr-generator` 產 title + description + inline 自註解清單
-8. 建立 MR
-9. 逐則發佈 inline 自註解
-10. 回報 URL
+輸入 `/push`，目前在 `bug/typo_of_page`（乾淨、相對 main 領先 3 個 commit）：品質閘全過 → push
+→ 無既有 MR → 解析 metadata（Label `bug`；Issue ID 從分支名抓不到，詢問使用者後回 `#42`）
+→ `fe-mr-generator` 產出 title/description/inline 自註解清單 → 建立 MR → 逐則發佈 inline 自註解 → 回報 URL。
