@@ -24,7 +24,7 @@
 ## 一鍵安裝
 
 ```bash
-bash install_for_jack.sh
+bash ../hooks/notify-complete/install.sh
 ```
 
 腳本會自動：
