@@ -126,5 +126,4 @@ Claude Code 會自動載入 `~/.claude/settings.json`、`.claude/rules/*.md` 和
 ## 客製化
 
 - 修改 `rules/` 中的檔案以符合你的團隊規範
-- 設計原則：從痛點出發、30 行以內、一個檔案一個維度
-- 詳見 [rules/summary.md](rules/summary.md)
+- 設計原則：從痛點出發、30 行以內、一個檔案一個維度（完整版見 `~/.claude/playbooks/maintenance.md`）

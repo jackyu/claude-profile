@@ -14,8 +14,6 @@
 
 | 檔案 | 涵蓋範圍 |
 |------|----------|
-| `summary.md` | 設計原則摘要 — 為什麼要寫 rules、怎麼寫 |
-| `project-structure.md` | Next.js App Router 專案目錄結構規範 |
 | `typescript.md` | TypeScript 嚴格模式與型別使用規範 |
 | `coding-style.md` | Import 排序、命名慣例、Tailwind CSS 風格 |
 | `tailwind.md` | Tailwind class 排序、design token、dark mode、responsive 策略 |
@@ -24,19 +22,16 @@
 | `data-fetching.md` | React Query v5 資料請求、快取管理、API 層設計 |
 | `response-transform.md` | API 回應轉換的 immutable 原則，禁止 mutate 原始物件 |
 | `error-handling.md` | Error Boundary、API 錯誤、表單驗證、日誌 |
-| `testing.md` | 測試總則 — 依 lockfile 裁決 Jest / Vitest 選型，共通原則與覆蓋率門檻 |
-| `testing-vitest.md` | Vitest 測試規範與覆蓋率目標 |
-| `testing-jest.md` | Jest 測試規範與覆蓋率目標 |
+| `testing.md` | 測試總則 — 依 lockfile 裁決 Jest / Vitest 選型，共通原則、兩者設定與覆蓋率門檻 |
 | `security.md` | 環境變數、資料驗證、認證授權、依賴安全 |
 | `seo.md` | Next.js Metadata API、Open Graph、Structured Data、技術 SEO |
 | `git-workflow.md` | Conventional Commits、分支管理、MR/PR 流程 |
 | `git-worktree.md` | Git Worktree 目錄配置、命名與清理規範 |
 
 > 語氣與表達規範已遷移為 output style（`output-styles/communication-style.md`），直接進 system prompt、回應風格更穩定，不再放 rules。
+> 專案目錄結構規範已由 fe-arch skill 接手（`claude-skills` repo）；rules 設計原則的完整版在 `~/.claude/playbooks/maintenance.md`。
 
 ## 設計原則
-
-> 引用自 `summary.md`
 
 - **從痛點出發** — 你每次都要提醒 AI 的事情，就該變成 rule
 - **30 行以內** — 每個 rule 檔控制在 30 行，簡潔有力
