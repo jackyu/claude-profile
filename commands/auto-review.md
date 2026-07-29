@@ -1,5 +1,5 @@
 ---
-description: 監聽「目前目錄對應的」GitLab 專案中指派給我 review 的新/更新 MR，自動產出 HTML review 並推 Mattermost 通知（自帶迴圈）
+description: 監聽指派給我 review 的 GitLab MR，自動排程輪詢
 argument-hint: [repo-short-name] [interval. 預設 20m]
 ---
 
@@ -7,37 +7,36 @@ argument-hint: [repo-short-name] [interval. 預設 20m]
 
 附加參數：$ARGUMENTS
 
-這個 command 是「自帶迴圈」的監聽器：跑完一輪後會用 `ScheduleWakeup` 自排程下一輪。
-**它只審「你目前所在 repo checkout」對應的那個專案**（這樣才能用本機 `git diff` 取得變更）。
+這個 command 會監聽「你目前所在 repo checkout」對應專案中指派給你 review 的新/更新 MR，逐一產出
+HTML review 並推 Mattermost 通知；跑完一輪後用 `ScheduleWakeup` 自排程下一輪（自帶迴圈）。
+**它只審目前 cwd 對應的那個專案**（這樣才能用本機 `git diff` 取得變更）。
 要監聽多個專案，就在各專案的 checkout 目錄各開一個 Claude session 跑 `/auto-review`。
 
 設定根目錄（下稱 `$ROOT`）：`~/.claude/schedules/mr-review-by-loop`
 
 ## 韌性原則（保命，務必遵守）
 
-這條迴圈最大的風險不是「某筆 review 失敗」，而是**整條迴圈靜默死亡**：步驟 2–6 任何未處理的
-錯誤若讓本 turn 中止，就到不了步驟 7 的自排程 → 迴圈永久停擺，且因為通知在步驟 6 才發，你不會
-收到任何告警。因此：
+這條迴圈最大的風險是**整條迴圈靜默死亡**：步驟 2–6 任何未處理的錯誤若讓本 turn 中止，就到不了
+步驟 7 的自排程，迴圈就永久停擺——而且通知在步驟 6 才發，你不會收到任何告警。
 
-1. **心跳必活**：除了「步驟 1 的設定／目錄錯誤」（見步驟 1，刻意不排程），**步驟 2–6 的任何失敗
-   都不得中止整條迴圈**。失敗時降級為「**本輪跳過、仍照常排下一輪**」（直接跳到步驟 7），絕不讓迴圈死掉。
-2. **瞬時錯誤先重試**：所有外部呼叫（GitLab API / shell script / notify）失敗時，以
-   **retry-with-backoff** 重試最多 3 次（間隔 2s → 4s）。多數瞬斷（`ConnectionRefused`、
-   `FailedToOpenSocket`、短暫 5xx）重試一次就過，不會升級成整輪失敗。
-3. **單筆隔離**：步驟 5–6 逐一處理多個 MR 時，**某一個 MR 失敗只跳過那一個**，不影響其他 MR
-   與排程。失敗的 MR**不要更新狀態檔**（下一輪自動重審）。
+1. **心跳必活**：除了「步驟 1 的設定／目錄錯誤」（見步驟 1，刻意不排程），步驟 2–6 的任何失敗
+   都不得中止整條迴圈。失敗時降級為「本輪跳過、仍照常排下一輪」（直接跳到步驟 7）。
+2. **瞬時錯誤先重試**：所有外部呼叫（GitLab API / shell script / notify）用下面的 `retry` 包起來，
+   最多重試 3 次、間隔 2s→4s。Bash 工具的 shell state 不會跨呼叫保留，**每次執行都要把函式定義
+   和指令貼在同一行**：
 
-下方每個 shell script 呼叫都用這個 `retry` 包起來。Bash 工具的 shell state 不會跨呼叫保留，
-**每次 Bash 指令都要連同函式定義一起貼進同一行**：
+   ```bash
+   retry() { local n=1 d=2; until "$@"; do [ $n -ge 3 ] && return 1; sleep $d; n=$((n+1)); d=$((d*2)); done; }
+   retry <原本的指令>
+   ```
 
-```bash
-retry() { local n=1 d=2; until "$@"; do [ $n -ge 3 ] && return 1; sleep $d; n=$((n+1)); d=$((d*2)); done; }
-retry <原本的指令>
-```
+   下方步驟 2、6 沿用此定義（只寫 `retry <指令>`；實際執行時記得依此接上函式）。
 
-> 邊界：retry 只能救「session 還活著、但某次呼叫瞬斷」。若整個 session／container 被 OS 資源
-> 耗盡（`EAGAIN`、`fork failed`）殺死，in-session 自排程無從自救——那屬於外部 cron／headless
-> 的範疇，不在本檔處理。
+3. **單筆隔離**：步驟 5–6 逐一處理多個 MR 時，某一個 MR 失敗只跳過那一個，不影響其他 MR 與排程；
+   失敗的 MR 不更新狀態檔（下一輪自動重審）。
+
+> 邊界：retry 只救得了「session 還活著、但某次呼叫瞬斷」。整個 session／container 被 OS 資源
+> 耗盡（`EAGAIN`、`fork failed`）而死，屬於外部 cron／headless 的範疇，不在本檔處理。
 
 ## 你的任務（執行「一輪」，最後自排程）
 
@@ -81,10 +80,9 @@ retry <原本的指令>
 
 ### 2. 取得「指派給我」的 open MR 清單
 
-執行（`{project_path}` 用步驟 1 的值；用韌性原則的 `retry` 包起來）：
+執行（`{project_path}` 用步驟 1 的值；`retry` 定義見「韌性原則」第 2 點，實際執行時記得接上）：
 
 ```bash
-retry() { local n=1 d=2; until "$@"; do [ $n -ge 3 ] && return 1; sleep $d; n=$((n+1)); d=$((d*2)); done; }
 retry ~/.claude/scripts/gitlab/mr-list-for-review.sh "{project_path}"
 ```
 
@@ -145,10 +143,9 @@ retry ~/.claude/scripts/gitlab/mr-list-for-review.sh "{project_path}"
 - **HTML 報告路徑**，用 `file://` 開頭的絕對路徑，例如
   `file:///Users/.../reports/web-app/mr-review-123-ab12cd34.html`
 
-依 `notify-review-result.sh` 的 exit code 決定是否更新狀態：
+依 `notify-review-result.sh` 的 exit code 決定是否更新狀態（`retry` 定義同上，實際執行時記得接上）：
 
 ```bash
-retry() { local n=1 d=2; until "$@"; do [ $n -ge 3 ] && return 1; sleep $d; n=$((n+1)); d=$((d*2)); done; }
 if ~/.claude/schedules/mr-review-by-loop/notify-review-result.sh "<html_abs>" "<success_markdown>" "[{display_name}] MR !<iid>"; then
   # exit 0：HTML 產物存在且已成功通知 → 更新狀態檔（immutable 合併）
   retry ~/.claude/schedules/mr-review-by-loop/update-state.sh {repo} <iid> <head_sha>
