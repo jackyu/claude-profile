@@ -56,46 +56,31 @@ description: 依任務描述自動建立 git worktree 與分支，並切換進�
 
 ### 3. 同步遠端基底（避免分支基底汙染）⚠️ 必做
 
-**問題背景**：直接從本地 `main` 切分支時，若本地 `main` 落後或分歧於 `origin/main`，
-新分支會夾帶一堆「本地 main 有、origin/main 沒有」的無關 commit。MR 的 target 是
-`origin/main`，diff 就會把那些不相干變更全算進來（例如把 rc 版號合併、別人的功能
-commit 混進你的 feature MR），reviewer 會質疑「是不是混了兩個東西」。
-
-因此在建立 worktree 前，先把基底對齊到最新的遠端預設分支：
+**原則：新分支一律以 `origin/<default>` 為起點，不要從可能過期的本地 `<default>` 切。**
+本地 `<default>` 落後或分歧時，從它切出的分支會把不相干 commit 夾進 MR diff。
 
 ```bash
-# 偵測遠端預設分支（通常是 main，少數 repo 為 master）
+# 偵測遠端預設分支（通常是 main），並同步最新狀態
 default=$(git symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null | sed 's@^origin/@@')
 default=${default:-main}
-
-# 同步遠端最新狀態
 git fetch origin "$default"
-
-# 檢查本地 default 是否落後/分歧於 origin/default（純資訊，不必須對齊本地）
-git log --oneline "$default..origin/$default" | head   # 有輸出 = 本地落後
-git log --oneline "origin/$default..$default" | head   # 有輸出 = 本地領先（潛在汙染來源）
 ```
 
-**關鍵原則：新分支一律以 `origin/<default>` 為起點，不要從可能過期的本地 `<default>` 切。**
+### 4. 建立 worktree
 
-### 4. 呼叫 using-git-worktrees skill
+```bash
+branch="<type>/<short-description>"
+path=".claude/worktrees/<short-description>"   # 專案無 .claude/ 目錄時改用 .worktrees/
 
-使用 Skill 工具呼叫 `superpowers:using-git-worktrees`，並告知：
+# worktree 目錄必須被 ignore（未列入則補上並 commit）
+grep -qxF '.claude/worktrees/' .gitignore || printf '.claude/worktrees/\n' >> .gitignore
 
-- 預期分支名稱：`<type>/<short-description>`
-- 預期目錄：`.claude/worktrees/<short-description>`（skill 會自動依優先順序選定路徑；
-  若不存在且 CLAUDE.md 無偏好，依 skill 規則詢問使用者）
-- **分支起點：`origin/<default>`**（務必明確指定，見步驟 3）
+git branch --list "$branch"   # 有輸出 = 分支已存在，走步驟 8 詢問
+git worktree add "$path" -b "$branch" "origin/$default"
+```
 
-Skill 會負責：
-
-- `.gitignore` 驗證（專案內目錄）
-- `git branch --list` 確認分支不存在
-- 建立 worktree —— **務必帶上遠端起點**：`git worktree add <path> -b <branch> origin/<default>`
-  （skill 預設指令 `git worktree add <path> -b <branch>` 會從本地 HEAD 切，**不要照用**，
-  要補上 `origin/<default>` 起點）
-- 自動偵測 `package.json` / `Cargo.toml` / `requirements.txt` / `go.mod` 並執行 setup
-- 執行 baseline 測試
+建立後進入新 worktree：偵測 `package.json` / `Cargo.toml` / `requirements.txt` / `go.mod`，
+執行對應的相依安裝，並跑 baseline 測試確認起點是綠的。
 
 ### 5. 基底乾淨檢查（建立後立即驗證）⚠️ 必做
 
@@ -119,8 +104,6 @@ git log --oneline "origin/$default..HEAD"
 
 ### 6. 切換至新 worktree
 
-Skill 完成後，使用 Bash 工具執行：
-
 ```bash
 cd <worktree-path>
 ```
@@ -140,11 +123,10 @@ git worktree list
 - 一行訊息：`實作依據：<issue #NNN｜spec 檔路徑（已歸檔）｜對話描述>`
 - 一行訊息：`準備開發：<原始任務描述>`
 
-### 8. 若 skill 執行中發生錯誤
+### 8. 若執行中發生錯誤
 
 - 分支已存在 → 詢問是否使用既有分支或改名
-- 目錄未在 .gitignore → 遵循 skill 指引加入並 commit
-- 基底汙染（步驟 5 檢查到多餘 commit）→ 列出多餘 commit，建議 `git rebase --onto origin/<default> <base>` 後再開發
+- 基底汙染 → 依步驟 5 的補救流程處理
 - baseline 測試失敗 → 回報具體錯誤，詢問是否繼續
 - `issue-get.sh` 抓取失敗（步驟 0）→ 提示改貼 issue 內容，或改用 `.claude/specs/` 的 spec 檔
 - `.claude/specs/` 有多份 spec → `AskUserQuestion` 詢問用哪一份
@@ -159,7 +141,7 @@ git worktree list
 2. 翻譯「畫面疊字錯誤」→ `typo_of_page`
 3. `git fetch origin main`，確認以 `origin/main` 為分支起點
 4. 最終分支名：`bug/typo_of_page`
-5. 呼叫 skill 建立 `.claude/worktrees/typo_of_page`（`git worktree add ... -b bug/typo_of_page origin/main`）
+5. 建立 worktree：`git worktree add .claude/worktrees/typo_of_page -b bug/typo_of_page origin/main`
 6. 基底乾淨檢查：`git log --oneline origin/main..HEAD` 為空 ✓
 7. `cd` 進入
 8. 列出：

@@ -1,5 +1,5 @@
 ---
-description: 規格逼問到產出前端技術 issue 一條龍（brainstorming → grill → fe-issue）
+description: 規格逼問到產出前端技術 issue 一條龍（意圖釐清 → grill → fe-issue）
 argument-hint: "[PM issue URL | 需求描述 | 留空從對話起手]"
 ---
 
@@ -50,14 +50,14 @@ grep -qxF '.claude/specs/' .gitignore || printf '.claude/specs/\n' >> .gitignore
 
 後續每個關卡都讀寫這份檔，它就是 grill ↔ fe-issue 之間的正式介面。
 
-### 2. 模糊就先 brainstorming
+### 2. 模糊就先釐清意圖
 
 判斷需求是否成形（有明確目標與範圍）：
 
-- **過於模糊**（只有一句話、無範圍/無目標）→ 先用 Skill 工具呼叫 `superpowers:brainstorming` 探索意圖，把釐清出的方向與選項寫進 spec 檔的「決議紀錄」，再進第 3 步。
+- **過於模糊**（只有一句話、無範圍/無目標）→ 先探索意圖：以開放式問題一次一題釐清「要解什麼問題、給誰用、成功長什麼樣、範圍邊界在哪」，提出 2–3 個可行方向讓使用者選，把選定方向與捨棄選項寫進 spec 檔的「決議紀錄」，再進第 3 步。
 - **已具體** → 略過，直接逼問。
 
-> grill 適合壓測「已有的計畫」，brainstorming 負責「生出計畫」——次序不要顛倒。
+> grill 適合壓測「已有的計畫」，意圖釐清負責「生出計畫」——次序不要顛倒。
 
 ### 3. 逼問規格（自動選模式）
 
@@ -124,19 +124,7 @@ ls CONTEXT.md docs/adr/ 2>/dev/null
 | 情境 | 處理 |
 |------|------|
 | `issue-get.sh` 抓取失敗 | 告知使用者，請其改貼 issue 內容後繼續 |
-| 需求仍模糊但使用者想直接產 | 提醒風險，仍可由使用者決定略過 brainstorming |
+| 需求仍模糊但使用者想直接產 | 提醒風險，仍可由使用者決定略過意圖釐清 |
 | gate 未通過 | 列出未滿足項，退回逼問，不產 issue |
 | codex 未設定 | 提示 `/codex:setup`，跳過審查步驟繼續 |
 | 專案無 CONTEXT.md/ADR | 自動改用 `grill-me`，不報錯 |
-
-## 範例
-
-輸入：`/spec 做一個自選股匯出 CSV 的功能`
-
-流程：
-1. 無 URL → 當作需求描述；建 `spec-watchlist-export-csv.md`
-2. 需求偏模糊 → 呼叫 `brainstorming` 釐清：匯出範圍、欄位、格式 → 寫進決議紀錄
-3. 專案無 CONTEXT.md → 呼叫 `grill-me` 逐題逼問（編碼、空清單、權限）→ 決議與未決逐條回寫
-4. gate：帳本剩 1 題未答 → 退回逼問 → 補答後通過
-5. 詢問 codex 審 → 使用者選審 → codex 指出「未定義匯出筆數上限」→ 折回帳本 → 補答 → gate 再通過
-6. 呼叫 `fe-issue` 讀 spec 檔 → 探索架構與 API → 產前端技術 issue 草稿 → 詢問是否建到 GitLab
