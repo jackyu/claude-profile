@@ -61,8 +61,7 @@
   // Hooks 總覽：
   // - 制度性 hooks（CLAUDE.md 鐵律配套）：write-ledger / claim-audit / anchor-reinject /
   //   coverage-check / enforce-mr-generator / gitlab-write-gate / notify-complete
-  // - DynamicIsland 通知（島式 UI）：island-hook.sh（App 內建）＋ dynamic-island-hook（個人版），
-  //   幾乎掛在所有事件上，只做通知、無副作用
+  // - DynamicIsland 通知（島式 UI）：island-hook.sh（App 內建），每事件單掛、只做通知、無副作用
   "hooks": {
     "Notification": [
       {
@@ -74,16 +73,6 @@
             "timeout": 5
           }
         ]
-      },
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "CC_ISLAND_STOP_TIMEOUT=30 \"$HOME/.claude/hooks/dynamic-island-hook\"",
-            "timeout": 5
-          }
-        ]
       }
     ],
     "PermissionDenied": [
@@ -92,7 +81,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "CC_ISLAND_STOP_TIMEOUT=30 \"$HOME/.claude/hooks/dynamic-island-hook\"",
+            "command": "/Applications/DynamicIsland.app/Contents/Resources/island-hook.sh",
             "timeout": 5
           }
         ]
@@ -108,16 +97,6 @@
             "timeout": 30
           }
         ]
-      },
-      {
-        "matcher": "Bash|Edit|Write|MultiEdit|NotebookEdit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "CC_ISLAND_STOP_TIMEOUT=30 \"$HOME/.claude/hooks/dynamic-island-hook\"",
-            "timeout": 30
-          }
-        ]
       }
     ],
     "PostCompact": [
@@ -126,7 +105,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "CC_ISLAND_STOP_TIMEOUT=30 \"$HOME/.claude/hooks/dynamic-island-hook\"",
+            "command": "/Applications/DynamicIsland.app/Contents/Resources/island-hook.sh",
             "timeout": 5
           }
         ]
@@ -134,11 +113,11 @@
     ],
     "PostToolUse": [
       {
-        // 記錄實際寫入的檔案（供 Stop 時 claim-audit.sh 對帳）
         "matcher": "Write|Edit|NotebookEdit",
         "hooks": [
           {
             "type": "command",
+            // 記錄實際寫入的檔案（供 Stop 時 claim-audit.sh 對帳）
             "command": "$HOME/.claude/hooks/write-ledger.sh"
           }
         ]
@@ -152,16 +131,6 @@
             "timeout": 5
           }
         ]
-      },
-      {
-        "matcher": "Bash|Edit|Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "CC_ISLAND_STOP_TIMEOUT=30 \"$HOME/.claude/hooks/dynamic-island-hook\"",
-            "timeout": 5
-          }
-        ]
       }
     ],
     "PostToolUseFailure": [
@@ -170,7 +139,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "CC_ISLAND_STOP_TIMEOUT=30 \"$HOME/.claude/hooks/dynamic-island-hook\"",
+            "command": "/Applications/DynamicIsland.app/Contents/Resources/island-hook.sh",
             "timeout": 5
           }
         ]
@@ -182,7 +151,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "CC_ISLAND_STOP_TIMEOUT=30 \"$HOME/.claude/hooks/dynamic-island-hook\"",
+            "command": "/Applications/DynamicIsland.app/Contents/Resources/island-hook.sh",
             "timeout": 5
           }
         ]
@@ -190,25 +159,49 @@
     ],
     "PreToolUse": [
       {
-        // 強制 MR 描述經 fe-mr-generator 產生（驗隱形標記，缺則擋下建立 MR）
         "matcher": "mcp__gitLab__create_merge_request|mcp__gitLab__update_merge_request",
         "hooks": [
           {
             "type": "command",
+            // 強制 MR 描述經 fe-mr-generator 產生（驗隱形標記，缺則擋下建立 MR）
             "command": "$HOME/.claude/hooks/enforce-mr-generator.sh"
           }
         ]
       },
       {
-        // 攔截繞過 ask 清單直呼 GitLab 寫入 API 的 Bash 指令
         "matcher": "Bash",
         "hooks": [
           {
             "type": "command",
+            // 攔截繞過 ask 清單直呼 GitLab 寫入 API 的 Bash 指令
             "command": "$HOME/.claude/hooks/gitlab-write-gate.sh"
           }
         ]
       },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Applications/DynamicIsland.app/Contents/Resources/island-hook.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Applications/DynamicIsland.app/Contents/Resources/island-hook.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
       {
         "matcher": "",
         "hooks": [
@@ -224,41 +217,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "CC_ISLAND_STOP_TIMEOUT=30 \"$HOME/.claude/hooks/dynamic-island-hook\"",
-            "timeout": 5
-          }
-        ]
-      }
-    ],
-    "SessionEnd": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "CC_ISLAND_STOP_TIMEOUT=30 \"$HOME/.claude/hooks/dynamic-island-hook\"",
-            "timeout": 5
-          }
-        ]
-      }
-    ],
-    "SessionStart": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "CC_ISLAND_STOP_TIMEOUT=30 \"$HOME/.claude/hooks/dynamic-island-hook\"",
-            "timeout": 5
-          }
-        ]
-      },
-      {
-        // compaction / 新 session 後重注 IMPLEMENTATION_PLAN.md
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
+            // compaction / 新 session 後重注 IMPLEMENTATION_PLAN.md
             "command": "$HOME/.claude/hooks/anchor-reinject.sh",
             "timeout": 10
           }
@@ -267,11 +226,11 @@
     ],
     "Stop": [
       {
-        // 對帳 write-ledger 記錄的檔案，缺檔或空檔擋下結束
         "matcher": "",
         "hooks": [
           {
             "type": "command",
+            // 對帳 write-ledger 記錄的檔案，缺檔或空檔擋下結束
             "command": "$HOME/.claude/hooks/claim-audit.sh",
             "timeout": 10
           }
@@ -295,16 +254,6 @@
             "command": "$HOME/.claude/hooks/notify-complete.sh"
           }
         ]
-      },
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "CC_ISLAND_STOP_TIMEOUT=30 \"$HOME/.claude/hooks/dynamic-island-hook\"",
-            "timeout": 35
-          }
-        ]
       }
     ],
     "StopFailure": [
@@ -313,7 +262,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "CC_ISLAND_STOP_TIMEOUT=30 \"$HOME/.claude/hooks/dynamic-island-hook\"",
+            "command": "/Applications/DynamicIsland.app/Contents/Resources/island-hook.sh",
             "timeout": 5
           }
         ]
@@ -329,16 +278,6 @@
             "timeout": 5
           }
         ]
-      },
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "CC_ISLAND_STOP_TIMEOUT=30 \"$HOME/.claude/hooks/dynamic-island-hook\"",
-            "timeout": 5
-          }
-        ]
       }
     ],
     "SubagentStop": [
@@ -351,25 +290,15 @@
             "timeout": 5
           }
         ]
-      },
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "CC_ISLAND_STOP_TIMEOUT=30 \"$HOME/.claude/hooks/dynamic-island-hook\"",
-            "timeout": 5
-          }
-        ]
       }
     ],
     "TaskCompleted": [
       {
-        // 測試覆蓋率檢查（僅提示不阻擋；門檻 line 70／branch 60）
         "matcher": "",
         "hooks": [
           {
             "type": "command",
+            // 測試覆蓋率檢查（僅提示不阻擋；門檻 line 70／branch 60）
             "command": "$HOME/.claude/hooks/coverage-check.sh"
           }
         ]
@@ -382,16 +311,6 @@
           {
             "type": "command",
             "command": "/Applications/DynamicIsland.app/Contents/Resources/island-hook.sh",
-            "timeout": 5
-          }
-        ]
-      },
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "CC_ISLAND_STOP_TIMEOUT=30 \"$HOME/.claude/hooks/dynamic-island-hook\"",
             "timeout": 5
           }
         ]
@@ -424,7 +343,6 @@
     "security-guidance@claude-plugins-official": true,
     "sentry@claude-plugins-official": true,
     "skill-creator@claude-plugins-official": true,
-    "superpowers@claude-plugins-official": false,
     "telegram@claude-plugins-official": true,
     "codex@openai-codex": true,
     "heptabase@heptabase-cli-skills": true,
