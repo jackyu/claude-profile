@@ -6,19 +6,10 @@
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 source "$SCRIPT_DIR/_config.sh"
 
-# --dry-run: strip flag, set DRY_RUN so _config.sh's gitlab_api prints instead of sending
-DRY_RUN=0
-_args=()
-for _a in "$@"; do
-  [[ "$_a" == "--dry-run" ]] && { DRY_RUN=1; continue; }
-  _args+=("$_a")
-done
-set -- ${_args[@]+"${_args[@]}"}
+parse_common_flags "$@"
+set -- ${PARSED_ARGS[@]+"${PARSED_ARGS[@]}"}
 
-if [[ $# -lt 2 ]]; then
-  echo "Usage: $0 <project_path_or_id> <mr_iid> --file <path> (--new-line N | --old-line N) --body <text> [--old-path <p>] [--base-sha <s> --start-sha <s> --head-sha <s>] [--dry-run]" >&2
-  exit 1
-fi
+[[ $# -lt 2 ]] && usage_exit "<project_path_or_id> <mr_iid> --file <path> (--new-line N | --old-line N) --body <text> [--old-path <p>] [--base-sha <s> --start-sha <s> --head-sha <s>] [--dry-run]"
 
 PROJECT_RAW="$1"
 MR_IID="$2"
