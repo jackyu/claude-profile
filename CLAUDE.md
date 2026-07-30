@@ -5,6 +5,7 @@
 ## 專案結構
 
 - `settings.json` — `~/.claude/settings.json` 的去敏範本（權限、hooks、plugins、狀態列、output style），換機重建的參照依據
+- `commands/` — 自訂 slash commands（auto-review、push、spec、start）
 - `rules/` — 前端開發規範集合
 - `output-styles/` — 自訂 output style（回應語氣規範，進 system prompt）
 - `hooks/` — Claude Code hooks 集合（coverage-check 等）
