@@ -30,6 +30,7 @@
       "Read(~/.zshrc)",
       // GitLab 唯讀腳本與 mr-review 迴圈輔助腳本
       "Bash(~/.claude/scripts/gitlab/mr-list-for-review.sh:*)",
+      "Bash(~/.claude/scripts/gitlab/user-id.sh:*)",
       "Bash(~/.claude/schedules/mr-review-by-loop/notify-mattermost.sh:*)",
       "Bash(~/.claude/schedules/mr-review-by-loop/update-state.sh:*)",
       "Bash(~/.claude/schedules/mr-review-by-loop/resolve-project.sh:*)",
@@ -51,6 +52,7 @@
       "Bash(~/.claude/scripts/gitlab/mr-approve.sh:*)",
       "Bash(~/.claude/scripts/gitlab/issue-create.sh:*)",
       "Bash(~/.claude/scripts/gitlab/issue-note.sh:*)",
+      "Bash(~/.claude/scripts/gitlab/issue-status.sh:*)",
       "Bash(~/.claude/scripts/gitlab/mr-create.sh:*)",
       "Bash(~/.claude/scripts/gitlab/mr-update.sh:*)"
     ],
