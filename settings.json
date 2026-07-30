@@ -45,6 +45,7 @@
     // GitLab 寫入類腳本一律先問過
     "ask": [
       "Bash(~/.claude/scripts/gitlab/mr-note.sh:*)",
+      "Bash(~/.claude/scripts/gitlab/mr-note-update.sh:*)",
       "Bash(~/.claude/scripts/gitlab/mr-reply.sh:*)",
       "Bash(~/.claude/scripts/gitlab/mr-resolve.sh:*)",
       "Bash(~/.claude/scripts/gitlab/mr-approve.sh:*)",
