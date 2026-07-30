@@ -118,6 +118,8 @@ glab api "projects/:id/merge_requests?state=opened&source_branch=<current>"
 | `refactor/`、`chore/`、`perf/` | `# type::improvement` |
 | `qa/`、`test/` | `# type::QA` |
 
+3. **兩層都判不出**（無 issue 且前綴不在表中，如 `docs/` 或無前綴分支）→ `AskUserQuestion` 問使用者要掛哪個 `# type::*`，不要猜、也不要不掛。
+
 label 實名帶 `# ` 前綴，逐字照抄——專案裡另有 `# type::Bug`、`# type::bugfix` 這類相似項，抄錯會靜默建出新 label。建立 MR 前可用 `glab api "projects/:id/labels"` 驗證存在；若不存在，移除該 label 讓 MR 建立不失敗，並告知使用者。
 
 **Issue ID 來源（依序）：**
