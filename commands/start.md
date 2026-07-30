@@ -20,7 +20,7 @@ description: 依任務描述自動建立 git worktree 與分支，並切換進�
    - issue 的 title/labels 拿去推導分支 type 與名稱（見步驟 1–2）。
 2. **否則 → 找 `/spec` 的持久 spec 檔**（先 active 再 archive）：
    - 帶明確參照（`#NNN` 或 spec 檔路徑）→ 直接定位 `.claude/specs/spec-<NNN>-*.md`、`.claude/specs/archive/spec-<NNN>-*.md` 或該路徑。
-   - 無明確參照：`.claude/specs/*.md` 只有一份 → 直接用；多份 → `AskUserQuestion` 讓使用者選。
+   - 無明確參照：先看 active 的 `.claude/specs/*.md`——只有一份 → 直接用；多份 → `AskUserQuestion` 讓使用者選。active 一份都沒有，再看 `.claude/specs/archive/*.md`（續作 session 要的規格書已在首跑時歸檔到這裡，撈得回來就不必重議 seams），同樣是一份直接用、多份就問。
    - **不做模糊文字比對**——認不出就往下一階。
 3. **兩者都沒有** → 把 `$ARGUMENTS` 當任務描述；若連描述都沒有，請使用者補述要做什麼。
 
@@ -72,10 +72,31 @@ git fetch origin "$default"
 branch="<type>/<short-description>"
 path=".claude/worktrees/<short-description>"   # 專案無 .claude/ 目錄時改用 .worktrees/
 
-# worktree 目錄必須被 ignore（未列入則補上並 commit）
+# worktree 與票目錄必須被 ignore（未列入則補上並 commit）
 grep -qxF '.claude/worktrees/' .gitignore || printf '.claude/worktrees/\n' >> .gitignore
+grep -qxF '.claude/tickets/' .gitignore || printf '.claude/tickets/\n' >> .gitignore
 
-git branch --list "$branch"   # 有輸出 = 分支已存在，走步驟 8 詢問
+# 分支已存在？有輸出就停在這裡，走步驟 10 詢問，別往下建
+git branch --list "$branch"
+```
+
+**比不中也先別急著建。** 分支名是「任務描述翻成 3–6 個英文字」生出來的，同一個任務換句話說就生出不同名字；續作 session 若比不中舊分支，舊票會靜默變成孤兒。先掃一眼既有的 worktree 與票目錄（`archive` 不算）：
+
+```bash
+git worktree list
+ls .claude/tickets/ 2>/dev/null | grep -v '^archive$'
+```
+
+- 出現疑似同一任務的 worktree 或票目錄 → `AskUserQuestion` 請使用者確認是不是續作。確認是 → 沿用該分支與 worktree，改走步驟 10「分支已存在」那列的續作路徑，不建新的（`<short-description>` 一併改用舊分支名去掉 type 前綴的那段，worktree 與票目錄才對得上）。
+- 都對不上 → 確定是新任務，這時才建：
+
+```bash
+# 變數當場重宣告：上面那個 block 的 shell state 不會留到這一次呼叫
+branch="<type>/<short-description>"
+path=".claude/worktrees/<short-description>"
+default=$(git symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null | sed 's@^origin/@@')
+default=${default:-main}
+
 git worktree add "$path" -b "$branch" "origin/$default"
 ```
 
@@ -122,14 +143,75 @@ git worktree list
 - 其他所有 worktree 的路徑與分支（從 `git worktree list` 取得）
 - 一行訊息：`實作依據：<issue #NNN｜spec 檔路徑（已歸檔）｜對話描述>`
 - 一行訊息：`準備開發：<原始任務描述>`
+- 一行訊息：`拆票：<N 張｜沿用既有 M 張（續作）｜已跳過（micro）>`
+- 一行訊息：`下一張：<#NN 票名（in-progress 優先）>`
 
-### 8. 若執行中發生錯誤
+最後兩行要等第 8 步的結果，拆票完成後補印。
 
-- 分支已存在 → 詢問是否使用既有分支或改名
+### 8. 拆解 tracer-bullet 票（to-tickets）
+
+把實作依據拆成一組 tracer-bullet 垂直切片票，落成本地票檔，讓實作有序、中斷可續。
+
+**先判斷走哪條路：**
+
+1. **續作**：主 repo 根的 `.claude/tickets/<short-description>/` 已存在 → 這是中斷後重啟，沿用既有票、**不重拆**，直接進第 9 步依票檔狀態續作。
+2. **micro**：明顯一張票內就做得完的單點改動（改一處文案、調一個常數、單檔小修）→ 跳過拆票，第 9 步以單票模式依 brief 直接開工。
+3. **其餘** → 往下拆票。
+
+讀 plugin 的 to-tickets 指示照做（版本用 glob，不寫死版號）：
+
+```bash
+ls ~/.claude/plugins/cache/claude-plugins-official/mattpocock-skills/*/skills/engineering/to-tickets/SKILL.md
+```
+
+依其流程走完；探索在**新 worktree 內**進行（此時基底最新、baseline 已綠），quiz 環節照走——使用者核可粒度與 blocking edges 之後才落檔。
+
+本流程對 to-tickets 原文的兩處覆寫（以本節為準）：
+
+- **落檔位置**：用 local files 模式，寫到**主 repo 根**的 `.claude/tickets/<short-description>/NN-<slug>.md`（不是 `.scratch/`，也不放進 worktree——比照 brief「不寫進 worktree 避免誤 commit」）。`<short-description>` 與分支、worktree 同名，三者互相對得上；該目錄已於第 4 步納入 `.gitignore`。
+- **Status 初始值**：填 `ready`。本地用 `ready → in-progress → done` 三態，取代 `ready-for-agent` 這個 label 語意。票只落本地檔，GitLab 維持單一 issue、不發票。
+
+fallback：glob 找不到 SKILL.md → 提示使用者確認 `mattpocock-skills` plugin 已安裝，改以 brief 直接開工，**不阻斷**主流程。
+
+### 9. 逐票實作（implement）
+
+讀 plugin 的 implement 指示照做（版本同樣用 glob）：
+
+```bash
+ls ~/.claude/plugins/cache/claude-plugins-official/mattpocock-skills/*/skills/engineering/implement/SKILL.md
+```
+
+它要求的 `/tdd` 直接用 Skill 工具呼叫 `mattpocock-skills:tdd`；seams 以規格書「Testing Decisions」中已與使用者確認者為準（沒有規格書時，開工前先跟使用者議定 seams）。
+
+**選票規則**（首跑與續作同一套，只看票檔）：
+
+1. 有 `Status: in-progress` 的票 → 先做完它。
+2. 否則取 **frontier**——blocking edges 指向的票全為 `done` 的 `ready` 票——依編號取最小的一張。
+3. 全部票都是 `done` → 進下面的收尾。
+
+micro 模式沒有票檔，把 brief 當單張票走同一個迴圈，略過票檔標記。
+
+**每張票的迴圈：**
+
+1. 開工前先把該票 `Status` 改成 `in-progress`。
+2. 用 `mattpocock-skills:tdd` 實作，過程中常跑 type-check 與該票相關的單檔測試。
+3. 該票 AC 全數滿足、測試綠 → 勾選票檔的 AC checkbox。
+4. `Status` 改成 `done`。
+5. commit 到當前分支（conventional commits；一張票至少一個可編譯、測試通過的 commit）。
+
+Status 與 AC **即時回寫票檔**，不留到最後批次補——這是中斷續作的唯一依據：新 session 重跑 `/start` 同任務，第 8 步偵測到既有票目錄後，本步驟只憑票檔就重建得出進度。
+
+**全部票 `done` 後**：跑一次完整測試套件與 type-check，輸出乾淨才收工，接著提示使用者可走 `/code-review` 審這批變更、再走 `/finish` 收尾。
+
+### 10. 若執行中發生錯誤
+
+- 分支已存在 → 詢問是否使用既有分支或改名。選用既有分支通常代表這是中斷後重啟：`git worktree list` 中還有對應該分支的 worktree → `cd` 進去，跳過步驟 5–6（基底首跑時已檢查過，人也已經在樹裡）；worktree 不見了 → 用 `git worktree add "$path" "$branch"` 重掛（**既有分支不帶 `-b`**，帶了必 fatal），重掛後補跑步驟 5–6 再繼續。無論哪條，都**仍照步驟 7 回報**——拆票行寫「沿用既有 M 張（續作）」，下一張行讀票目錄、依步驟 9 的選票規則印出，這正是續作者最需要看到的一行；回報完進步驟 8，由它偵測既有票目錄後接步驟 9 續作
 - 基底汙染 → 依步驟 5 的補救流程處理
 - baseline 測試失敗 → 回報具體錯誤，詢問是否繼續
 - `issue-get.sh` 抓取失敗（步驟 0）→ 提示改貼 issue 內容，或改用 `.claude/specs/` 的 spec 檔
 - `.claude/specs/` 有多份 spec → `AskUserQuestion` 詢問用哪一份
+- to-tickets／implement 的 SKILL.md 找不到（步驟 8／9）→ 提示確認 `mattpocock-skills` plugin 已安裝，退回依 brief 直接開工，不阻斷
+- 票檔 Status 與實際進度矛盾（例如標了 `done` 但測試是紅的）→ 以實際驗證結果為準，修正票檔並告知使用者
 
 ## 範例
 
@@ -150,6 +232,7 @@ git worktree list
 目前目錄：/Users/.../myproject/.claude/worktrees/typo_of_page
 目前分支：bug/typo_of_page
 基底：origin/main（無多餘 commit）
+拆票：已跳過（micro）
 
 所有 worktrees：
   /Users/.../myproject                                  [main]
