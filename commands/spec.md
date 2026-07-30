@@ -138,6 +138,30 @@ fallback：glob 找不到 SKILL.md → 提示使用者確認 `mattpocock-skills`
 
 沿用 `fe-issue` 既有行為，由它詢問是否用 `issue-create.sh` 建到 GitLab。
 
+**建到 GitLab 時的固定參數**（覆寫 fe-issue Phase 3 的 label 預設，只在 `/spec` 這條路徑生效，fe-issue skill 本體不動）：
+
+- **適用範圍防呆**：這組固定值是照 <primary-project> 的慣例訂的。目標專案不是 <primary-project> → 停下來問使用者要掛哪些 label、指派給誰，不要照抄。
+- **labels 就這四個**，逐字照抄——`# type::` 那個帶 `# ` 前綴，另外三個不帶。專案裡佈滿只差一點的相似項（`# type::Bug`、`# type::bugfix` 這類大小寫或縮寫只差一點的項目），抄錯不會報錯，會靜默建出一個新 label：
+  `# type::<擇一>`、`FE`、`product::<product>`、`<team-label>`
+  不掛 `workflow::*`；PM issue 的 `$ priority::*` 等其他 label 一律不繼承。
+- **`# type::` 擇一**：PM issue 已有 `# type::*` → 沿用同一個；沒有 → 依規格性質判斷（修壞掉的行為→`# type::bug`、新能力→`# type::feature`、既有功能優化→`# type::improvement`、驗證任務→`# type::QA`）；還是判不出來 → `AskUserQuestion` 問使用者，不要猜。
+- **assignee**：`~/.claude/scripts/gitlab/user-id.sh jackyu` 取數字 ID 餵給 `--assignee-ids`。
+
+```bash
+~/.claude/scripts/gitlab/issue-create.sh "<project>" "<title>" \
+  --description "<issue 正文>" \
+  --labels "# type::<擇一>,FE,product::<product>,<team-label>" \
+  --assignee-ids "$(~/.claude/scripts/gitlab/user-id.sh jackyu)"
+```
+
+**建立成功後設狀態**：進度全程走 GitLab 原生 status，不再用 `workflow::*` label 表達。
+
+```bash
+~/.claude/scripts/gitlab/issue-status.sh "<project>" <NNN> "Ready to develop"
+```
+
+失敗不阻斷——issue 已經建起來了，印警告請使用者手動改即可。這是狀態接力的第一棒：`Ready to develop`（/spec）→ `Developing`（/start）→ `Reviewing`（/push）。
+
 **若有建 GitLab issue**：把 spec 檔改名嵌入 issue iid → `.claude/specs/spec-<NNN>-<slug>.md`，讓 `/start #NNN` 之後能用 `NNN` 精準對上。沒建 issue 則維持 `spec-<slug>.md`。
 
 ### 8. 印出交接線索
@@ -159,3 +183,5 @@ fallback：glob 找不到 SKILL.md → 提示使用者確認 `mattpocock-skills`
 | codex 未設定 | 提示 `/codex:setup`，跳過審查步驟繼續 |
 | 專案無 CONTEXT.md/ADR | 自動改用純 `mattpocock-skills:grilling` 訪談，不報錯 |
 | to-spec SKILL.md 找不到 | 提示確認 `mattpocock-skills` plugin 已安裝，改以「決議紀錄」為規格輸入繼續 |
+| issue 建好但 status 設定失敗（第 7 步） | 不阻斷，印警告請使用者手動改成 `Ready to develop` |
+| 目標專案不是 <primary-project>（第 7 步） | 停下來問使用者要掛的 label 與 assignee，不套用固定組 |
