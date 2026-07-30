@@ -123,6 +123,14 @@ git log --oneline "origin/$default..HEAD"
 
   列出多餘的 commit 清單，讓使用者確認後再 rebase，避免帶髒進後續 MR。
 
+**基底確認乾淨後，把 issue 狀態改成開發中**——只有步驟 0 的 brief 來自 issue（有 `#NNN`）時才做。`<project>` 用步驟 0 同一個來源：`git remote get-url origin` 解析出的 project path，別另外編一個。
+
+```bash
+~/.claude/scripts/gitlab/issue-status.sh "<project>" <NNN> "Developing"
+```
+
+失敗不阻斷，印警告請使用者手動改即可。續作時重設同一個值不會有副作用，不用特別判斷現值。
+
 ### 6. 切換至新 worktree
 
 ```bash
@@ -142,6 +150,7 @@ git worktree list
 - 基底狀態：相對 `origin/<default>` 無多餘 commit（步驟 5 的檢查結果）
 - 其他所有 worktree 的路徑與分支（從 `git worktree list` 取得）
 - 一行訊息：`實作依據：<issue #NNN｜spec 檔路徑（已歸檔）｜對話描述>`
+- 一行訊息：`Issue 狀態：<已改為 Developing｜略過（非 issue 起手）｜失敗（原因）>`
 - 一行訊息：`準備開發：<原始任務描述>`
 - 一行訊息：`拆票：<N 張｜沿用既有 M 張（續作）｜已跳過（micro）>`
 - 一行訊息：`下一張：<#NN 票名（in-progress 優先）>`
