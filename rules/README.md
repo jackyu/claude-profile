@@ -16,6 +16,7 @@
 |------|----------|
 | `typescript.md` | TypeScript 嚴格模式與型別使用規範 |
 | `coding-style.md` | Import 排序、命名慣例、Tailwind CSS 風格 |
+| `comment-style.md` | 程式碼註解的句子表達 — 去翻譯腔與贅字、40 字拆句、口語但專業 |
 | `tailwind.md` | Tailwind class 排序、design token、dark mode、responsive 策略 |
 | `html-semantics.md` | 語意化 HTML 標籤、無障礙 (a11y)、表單結構 |
 | `component-patterns.md` | React 元件撰寫、狀態管理、Server/Client Component |
