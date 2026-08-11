@@ -61,6 +61,12 @@ def main():
         deny("GitLab 寫入被擋：缺少 project 參數。")
     project = tail[0]
 
+    # 這個 hook 對指令文字做靜態解析，不展開 shell 變數——呼叫端若把 project 寫成
+    # "$VAR" 或 "${VAR}"，這裡收到的就是字面上的變數引用字串本身。直接攔下並給出
+    # 明確訊息，避免落入下面「不在 allowlist」的分支誤導使用者去改 projects.json。
+    if re.fullmatch(r"\$\{?[A-Za-z_][A-Za-z0-9_]*\}?", project):
+        deny("GitLab 寫入被擋：project 參數看起來像未展開的 shell 變數（實際收到的字面字串是 \"{}\"）。此 hook 對指令文字做靜態解析、不會展開 shell 變數，請把 project 路徑改成字面值直接寫進指令裡（包括 heredoc 裡帶變數的情況），不要用變數。".format(project))
+
     projects_path = os.path.expanduser("~/.claude/schedules/mr-review-by-loop/projects.json")
     allowed_paths, allowed_ids = set(), set()
     try:

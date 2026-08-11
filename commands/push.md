@@ -47,15 +47,39 @@ git log --oneline origin/<target>..HEAD
 
 任何一項失敗即中止（處理方式見下方「錯誤處理」表）。若無 `package.json` 或無對應 script，跳過此步。
 
+**變更規模檢查（僅提示，絕不阻擋）**
+
+品質閘過了之後，看一下這批要推的有多大：
+
+```bash
+git diff origin/<target>...HEAD --shortstat
+```
+
+總變更 **超過 300 行**就在建 MR 前提一句（門檻與 `fe-code-review` 的「大型變更」對齊）。AI 產出的 diff 天生比人寫的大，不主動問一次就會一路長到沒人 review 得動。
+
+判準三項：
+
+1. 這批 commit 是否包含多個彼此獨立、可各自上線的目的
+2. 是否把重構跟功能混在一起（混了之後 reviewer 分不出哪些行為改變是故意的）
+3. 拆開後每一份是否仍能編譯、測試通過
+
+任一成立就具體說明可以拆成哪幾份；都不成立就一句「規模較大但內容單一，不建議拆」帶過。
+
+**這一步不中止流程。** 使用者說繼續就繼續推——判斷拆不拆是他的事，這裡只負責讓他在按下去之前看到數字。
+
 ### 4. Push 到遠端
 
 ```bash
-# 偵測是否已有 upstream
-git rev-parse --abbrev-ref --symbolic-full-name @{u} 2>/dev/null
+# 偵測是否已有「正確」的 upstream：不只看有沒有，還要看是否同名
+current=$(git branch --show-current)
+upstream=$(git rev-parse --abbrev-ref --symbolic-full-name @{u} 2>/dev/null)
+upstream_branch=${upstream#*/}   # 去掉 remote 前綴，如 origin/main → main
 ```
 
-- 沒有 upstream → `git push -u origin <current>`
-- 有 upstream → `git push`
+⚠️ **`git worktree add -b <branch> origin/main` 會自動把 upstream 設成 `origin/main`**（不是同名遠端分支）。若只看「有沒有 upstream」就對其跑 `git push`，會把目前分支的 commit 推去 `origin/main`——若 main 無保護，等同直接把 feature commit 推進 main。
+
+- `upstream` 為空，或 `upstream_branch` **不等於** `$current` → 視為「無正確 upstream」，用 `git push -u origin <current>`（明確指定同名遠端分支，順便修正追蹤）
+- `upstream_branch` **等於** `$current` → 才用 `git push`
 
 失敗時中止（處理方式見下方「錯誤處理」表）。
 

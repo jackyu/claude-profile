@@ -2,6 +2,16 @@
 # PreToolUse hook：攔截建立/更新 GitLab MR，驗證 description 是否帶 fe-mr-generator 標記。
 # 缺標記 → deny，引導先用 fe-mr-generator skill 產生描述。
 # ponytail: 驗產物（標記）不驗流程；hook 永遠只是 grep 一個固定字串，skill 格式怎麼改都不誤擋。
+#
+# 防線分工（2026-08-11 查證後補記，別以為這條沒作用就拿掉）
+# ─────────────────────────────────────────────────────
+# 這條只掛 mcp__gitLab__create/update_merge_request，所以走 MCP 建 MR 時由它擋。
+# 但 /push 走的是 Bash 呼叫 scripts/gitlab/mr-create.sh，**不會觸發這條**——
+# 主流程的防線在 mr-create.sh:45-50 與 mr-update.sh:53-57 的 in-script 檢查（缺 marker → exit 1）。
+#
+# 為什麼不改成 Bash matcher：marker 在 description 檔案裡、不在 command 字串裡，
+# hook 得去解析參數再讀檔才驗得到，比 in-script 檢查脆弱又重複。
+# 兩條路各自守各自的入口，這樣最省事。
 set -euo pipefail
 
 MARKER='<!-- mr:fe-mr-generator -->'
