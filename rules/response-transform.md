@@ -1,34 +1,6 @@
-# response-transform.md
+# response-transform.md — API 回應轉換
 
-API 回應資料轉換必須遵守 immutable 原則，禁止直接修改 response 物件。
-
-## 禁止：直接修改 response
-
-```ts
-// BAD — 直接 mutate 原始物件
-data.applicationReviewData.bankInfo = { ...rest, subAccount: sub_account };
-app.submissionTime = toDateOrNull(app.submissionTime);
-records.forEach((r) => { r.updateTime = new Date(r.updateTime); });
-```
-
-## 正確：產生新物件
-
-```ts
-// GOOD — 展開運算子建立新物件，巢狀資料逐層展開
-const transformed = {
-  ...data,
-  submissionTime: toDateOrNull(data.submissionTime),
-  applicationReviewData: data.applicationReviewData
-    ? {
-        ...data.applicationReviewData,
-        updateRecords: data.applicationReviewData.updateRecords.map((r) => ({
-          ...r,
-          updateTime: toDateOrNull(r.updateTime) ?? new Date(0),
-        })),
-      }
-    : undefined,
-};
-```
+API 回應一律 immutable 處理。禁止直接改 response 物件——`data.a.b = c`、`app.time = toDate(app.time)`、`forEach` 內 mutate 都不行，一律用展開運算子產生新物件。
 
 ## 原則
 

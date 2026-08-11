@@ -1,29 +1,26 @@
-# git-worktree.md
+# git-worktree.md — worktree 使用規範
 
-Git Worktree 使用規範，隔離開發環境避免影響主工作區。
+一般走 `/start` 建、`/finish` 收；下面是手動處理時的規範。
 
-## 目錄配置
+## 目錄與命名
 
-- **優先**：`.claude/worktrees/` — Claude Code 預設路徑，與 `.claude/` 結構一致
-- **備選**：`.worktrees/` — 若專案無 `.claude/` 目錄時使用根目錄下此路徑
-- 兩個路徑都應加入 `.gitignore`
+- 路徑優先 `.claude/worktrees/`，專案沒有 `.claude/` 才用 `.worktrees/`；都要進 `.gitignore`
+- 分支命名 `<type>/<short_description>`（snake_case、不帶 ticket id），type 三選一：`feat/` 新功能、`bug/` 修 bug、`fix/` hotfix。例：`feat/auth_flow`
+- 建立前先確認分支不存在：`git branch --list <branch>`
 
-## 建立與命名
+## 建立
 
-- 命名格式：`<type>/<short-description>`，例如 `feat/auth-flow`、`fix/cart-total`
-- 建立前確認分支不存在：`git branch --list <branch-name>`
-- 建立指令：`git worktree add <path> -b <branch-name>`
+**一律以 `origin/<default>` 為基底**，不從可能落後的本地分支切：
 
-## 使用原則
+```bash
+git fetch origin
+git worktree add <path> -b <branch> origin/main
+```
 
-- 每個 worktree 對應一個獨立功能分支
-- 完成後合併回主分支，隨即清理 worktree
-- 不要在 worktree 內再建 worktree（避免巢狀）
-- 切勿刪除仍在使用中的 worktree 目錄，用 `git worktree remove` 清理
+建完立刻驗基底乾淨：`git log --oneline origin/main..HEAD` 應為空。
 
-## 清理流程
+## 使用與清理
 
-1. 確認工作已合併或推送至遠端
-2. `git worktree remove <path>` 移除 worktree
-3. `git branch -d <branch-name>` 刪除已合併的分支
-4. 定期執行 `git worktree prune` 清理失效參照
+- 一個 worktree 一個功能分支，不在 worktree 裡再開 worktree
+- 還在用的目錄不要直接刪，用 `git worktree remove <path>`
+- 分支合併後 `git branch -d <branch>`；定期 `git worktree prune` 清失效參照
