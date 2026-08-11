@@ -6,6 +6,8 @@ SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}" 2>/dev/null || ec
 RULES_DIR="$SCRIPT_DIR/rules"
 SCRIPTS_DIR="$SCRIPT_DIR/scripts"
 OUTPUT_STYLES_DIR="$SCRIPT_DIR/output-styles"
+AGENTS_DIR="$SCRIPT_DIR/agents"
+PLAYBOOKS_DIR="$SCRIPT_DIR/playbooks"
 
 # 顏色定義
 GREEN='\033[0;32m'
@@ -147,6 +149,45 @@ install_output_styles() {
   echo "  （或在 Claude Code 內用 /output-style 選擇；需重啟 session 或 /clear 才生效）"
 }
 
+# 安裝一個目錄下的 *.md（排除 README.md）到 ~/.claude/<name>/
+# agents 與 playbooks 共用；兩者都只是複製 markdown，沒有額外設定步驟
+install_md_dir() {
+  local src_dir="$1" name="$2" desc="$3"
+  local target_dir="$HOME/.claude/$name"
+
+  if [[ ! -d "$src_dir" ]]; then
+    echo -e "${RED}錯誤：找不到 $name/ 目錄（$src_dir）${NC}"
+    exit 1
+  fi
+
+  echo ""
+  echo -e "安裝目標：${GREEN}$target_dir${NC}"
+
+  if [[ -d "$target_dir" ]] && ls "$target_dir"/*.md &>/dev/null; then
+    echo ""
+    echo -e "${YELLOW}⚠ 目標目錄已存在 $desc 檔案${NC}"
+    read -rp "要覆蓋現有檔案嗎？(y/N): " overwrite
+    if [[ ! "$overwrite" =~ ^[Yy]$ ]]; then
+      echo "已取消安裝。"
+      exit 0
+    fi
+  fi
+
+  mkdir -p "$target_dir"
+
+  local count=0
+  local file
+  for file in "$src_dir"/*.md; do
+    [[ "$(basename "$file")" == "README.md" ]] && continue
+    cp "$file" "$target_dir/$(basename "$file")"
+    count=$((count + 1))
+  done
+
+  echo ""
+  echo -e "${GREEN}✔ 已安裝 ${count} 個 $desc 檔案${NC}"
+  echo "  目標路徑：$target_dir"
+}
+
 # 選擇安裝項目
 echo "請選擇安裝項目："
 echo ""
@@ -154,8 +195,10 @@ echo "  [1] Rules（規範）        → User 全域    ~/.claude/rules/"
 echo "  [2] Rules（規範）        → Project 專案  <project>/.claude/rules/"
 echo "  [3] Scripts（腳本）      → ~/.claude/scripts/"
 echo "  [4] Output Styles（語氣）→ ~/.claude/output-styles/"
+echo "  [5] Agents（子代理定義） → ~/.claude/agents/"
+echo "  [6] Playbooks（派工手冊）→ ~/.claude/playbooks/"
 echo ""
-read -rp "輸入選項 (1/2/3/4): " choice
+read -rp "輸入選項 (1/2/3/4/5/6): " choice
 
 case "$choice" in
   1)
@@ -179,8 +222,14 @@ case "$choice" in
   4)
     install_output_styles
     ;;
+  5)
+    install_md_dir "$AGENTS_DIR" "agents" "agent 定義"
+    ;;
+  6)
+    install_md_dir "$PLAYBOOKS_DIR" "playbooks" "playbook"
+    ;;
   *)
-    echo -e "${RED}無效選項，請輸入 1、2、3 或 4${NC}"
+    echo -e "${RED}無效選項，請輸入 1 到 6${NC}"
     exit 1
     ;;
 esac
