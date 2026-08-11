@@ -3,5 +3,9 @@
 # 機密憑證檔（切勿 commit，用 .env.example 當範本）
 .env
 
-# 本地 Claude Code 設定與 commit-guard（含敏感詞清單，勿進版控）
-.claude/
+# Claude Code 專案設定：機制進版控，實際清單與個人偏好留本地
+# （commit-guard.sh / commit-denylist.example.txt / settings.json 是要進版控的）
+.claude/commit-denylist.txt
+.claude/history-replace.txt
+.claude/settings.local.json
+.claude/worktrees/
