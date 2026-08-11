@@ -2,3 +2,6 @@
 
 # 機密憑證檔（切勿 commit，用 .env.example 當範本）
 .env
+
+# 本地 Claude Code 設定與 commit-guard（含敏感詞清單，勿進版控）
+.claude/
