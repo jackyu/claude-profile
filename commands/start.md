@@ -96,9 +96,31 @@ branch="<type>/<short-description>"
 path=".claude/worktrees/<short-description>"
 default=$(git symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null | sed 's@^origin/@@')
 default=${default:-main}
-
-git worktree add "$path" -b "$branch" "origin/$default"
 ```
+
+**建立前先偵測 orca-cli 是否可用。** 有的話優先用 orca 建，worktree 會一併掛進 Orca 的追蹤（terminal、UI 狀態都連動）；偵測不到、或 Orca app 沒在跑，就照原本 `git worktree add` 走，不阻斷 `/start`：
+
+```bash
+if [ -f ~/.claude/skills/orca-cli/SKILL.md ] && command -v orca >/dev/null 2>&1 && orca status --json >/dev/null 2>&1; then
+  use_orca=true
+else
+  use_orca=false
+fi
+```
+
+- **`use_orca=true`**：
+
+  ```bash
+  orca worktree create --name "$branch" --base-branch "origin/$default" --no-parent --json
+  ```
+
+  從回傳 JSON 讀出實際的 `worktree.path`（覆蓋掉上面的 `path` 變數）與實際分支名。Orca 若沒有照 `$branch` 原樣建立分支，用 `git -C <實際 path> branch -m <實際分支名> "$branch"` 更名對齊 `<type>/<short-description>` 慣例——本專案分支命名是鐵律，見 `~/.claude/rules/git-worktree.md`。建立過程報錯（`orca status` 過了但實際 `create` 失敗）→ 印警告，退回下面 `use_orca=false` 那條路徑，不中止 `/start`。
+
+- **`use_orca=false`**：
+
+  ```bash
+  git worktree add "$path" -b "$branch" "origin/$default"
+  ```
 
 建立後進入新 worktree：偵測 `package.json` / `Cargo.toml` / `requirements.txt` / `go.mod`，
 執行對應的相依安裝，並跑 baseline 測試確認起點是綠的。
