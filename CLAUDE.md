@@ -8,6 +8,7 @@
 - `commands/` — 自訂 slash commands（auto-review、push、spec、start）
 - `rules/` — 前端開發規範集合
 - `output-styles/` — 自訂 output style（回應語氣規範，進 system prompt）
+- `skills/` — 自訂 skills（refine-speech-style：把語感回饋提煉成規則寫回 output style）
 - `hooks/` — Claude Code hooks 集合（coverage-check 等）
 - `status-line/` — 自訂終端狀態列腳本與安裝工具
 - `CLAUDE.md` — 本檔案，專案層級指令
