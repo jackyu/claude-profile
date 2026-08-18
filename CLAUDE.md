@@ -20,6 +20,7 @@
 - 使用繁體中文撰寫規範內容
 - `settings.json` 含註解說明，修改時保留註解
 - 修改 `~/.claude/settings.json` 後同步回範本；機敏值（webhook、公司內部 URL）一律用佔位符，不入版控
+- `commands/*.md` 與 `~/.claude/commands/` 是兩份獨立檔案，改動任一邊都要同步另一邊，不然實際執行的指令會跟版控內容脫鉤
 
 ## Commit 規範
 
