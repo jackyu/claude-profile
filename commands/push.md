@@ -133,21 +133,21 @@ glab api "projects/:id/merge_requests?state=opened&source_branch=<current>"
 **Label：** 只掛一個 `# type::*`，來源依序：
 
 1. **有關聯 issue** → 讀 issue 自己的 `# type::*`（`~/.claude/skills/_shared/fe-mr-common/scripts/issue-get.sh <project> <NNN>`），沿用同一個，讓 issue 與 MR 對得上。
-2. **沒有 issue** → 看分支前綴：
+2. **沒有 issue** → 看分支前綴（`/spec` 建立的分支一律底線分隔，如 `feat_xxx`；手動建的舊分支可能還是斜線，如 `feat/xxx`，兩種都認）：
 
-| 分支前綴 | Label |
+| 分支前綴（底線或斜線皆算） | Label |
 |---------|-------|
-| `feat/` | `# type::feature` |
-| `fix/`、`bug/`、`hotfix/` | `# type::bug` |
-| `refactor/`、`chore/`、`perf/` | `# type::improvement` |
-| `qa/`、`test/` | `# type::QA` |
+| `feat` | `# type::feature` |
+| `fix`、`bug`、`hotfix` | `# type::bug` |
+| `refactor`、`chore`、`perf` | `# type::improvement` |
+| `qa`、`test` | `# type::QA` |
 
-3. **兩層都判不出**（無 issue 且前綴不在表中，如 `docs/` 或無前綴分支）→ `AskUserQuestion` 問使用者要掛哪個 `# type::*`，不要猜、也不要不掛。
+3. **兩層都判不出**（無 issue 且前綴不在表中，如 `docs_` 或無前綴分支）→ `AskUserQuestion` 問使用者要掛哪個 `# type::*`，不要猜、也不要不掛。
 
 label 實名帶 `# ` 前綴，逐字照抄——專案裡另有 `# type::Bug`、`# type::bugfix` 這類相似項，抄錯會靜默建出新 label。建立 MR 前可用 `glab api "projects/:id/labels"` 驗證存在；若不存在，移除該 label 讓 MR 建立不失敗，並告知使用者。
 
 **Issue ID 來源（依序）：**
-1. 分支名稱中的數字 — 例如 `feat/269_user_list` → `#269`
+1. 分支名稱中的數字 — 例如 `feat_269_user_list` → `#269`
 2. 對話上下文中使用者明確提到的 Issue 編號
 3. 以上都沒有 → AskUserQuestion 詢問「此 MR 關聯的 Issue ID？」（允許留空）
 
@@ -364,6 +364,6 @@ Inline 自註解：成功 <N> 則／失敗 <M> 則
 
 ## 範例
 
-輸入 `/push`，目前在 `bug/typo_of_page`（乾淨、相對 main 領先 3 個 commit）：品質閘全過 → push
+輸入 `/push`，目前在 `bug_typo_of_page`（乾淨、相對 main 領先 3 個 commit）：品質閘全過 → push
 → 無既有 MR → 解析 metadata（Label `bug`；Issue ID 從分支名抓不到，詢問使用者後回 `#42`）
 → `fe-mr-generator` 產出 title/description/inline 自註解清單 → 建立 MR → 逐則發佈 inline 自註解、補上「接著看」導引尾行、把閱讀地圖插進 description → 回報 URL。

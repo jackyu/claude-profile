@@ -11,9 +11,9 @@
 
 ## Branch 命名
 
-`<type>/<short_description>`，snake_case、不帶 ticket id，與 `/start` 產生的格式一致。
+`<type>_<short_description>`，全 snake_case（type 與描述用底線連接，不用 slash）、不帶 ticket id，採 orca-cli worktree 的命名慣例，與 `/spec` 產生的格式一致。
 
-分支的 type 只有三種，**跟上面的 commit type 清單不一樣**：`feat/` 新功能、`bug/` 修 bug、`fix/` 專指 hotfix。例：`feat/cart_checkout_flow`、`bug/typo_of_page`、`fix/login_token_expired`。
+分支的 type 只有三種，**跟上面的 commit type 清單不一樣**：`feat` 新功能、`bug` 修 bug、`fix` 專指 hotfix。例：`feat_cart_checkout_flow`、`bug_typo_of_page`、`fix_login_token_expired`。
 
 功能開發在獨立 worktree 分支進行，**絕不直接 commit 到 main 或 release 分支（rc/*）**。
 

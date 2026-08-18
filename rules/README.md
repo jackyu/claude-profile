@@ -29,7 +29,7 @@
 | `git-workflow.md` | Conventional Commits、分支命名、MR/PR 流程 |
 | `git-worktree.md` | Git Worktree 目錄配置、命名與清理規範 |
 
-> 分支命名（`feat/` `bug/` `fix/` + snake_case、不帶 ticket id）在 `git-workflow.md` 與 `git-worktree.md` 兩處都有，且與 `commands/start.md` 產生的格式對齊。改其中一處要三份一起改，否則模型手動開分支時會照 rules 走、跟 `/start` 產出的不一致。
+> 分支命名（`feat_` `bug_` `fix_` + snake_case、不帶 ticket id，type 與描述用底線連接不用 slash）在 `git-workflow.md` 與 `git-worktree.md` 兩處都有，且與 `commands/spec.md` 建立 worktree 時產生的格式對齊。改其中一處要三份一起改，否則模型手動開分支時會照 rules 走、跟 `/spec` 產出的不一致。
 
 > 語氣與表達規範已遷移為 output style（`output-styles/communication-style.md`），直接進 system prompt、回應風格更穩定，不再放 rules。
 > 專案目錄結構規範已由 fe-arch skill 接手（`claude-skills` repo）；rules 設計原則的完整版在 `~/.claude/playbooks/maintenance.md`。

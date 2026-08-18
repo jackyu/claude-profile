@@ -1,12 +1,13 @@
 # git-worktree.md — worktree 使用規範
 
-一般走 `/start` 建、`/finish` 收；下面是手動處理時的規範。
+一般走 `/spec` 最後一步建、`/finish` 收；下面是手動處理時的規範。
 
 ## 目錄與命名
 
-- 路徑優先 `.claude/worktrees/`，專案沒有 `.claude/` 才用 `.worktrees/`；都要進 `.gitignore`
-- 分支命名 `<type>/<short_description>`（snake_case、不帶 ticket id），type 三選一：`feat/` 新功能、`bug/` 修 bug、`fix/` hotfix。例：`feat/auth_flow`
-- 建立前先確認分支不存在：`git branch --list <branch>`
+- 有 orca-cli 優先用它建（worktree 掛進 Orca 追蹤），沒有才退回 `git worktree add`
+- 路徑優先 `.claude/worktrees/<name>`，專案沒有 `.claude/` 才用 `.worktrees/<name>`；都要進 `.gitignore`
+- 名稱 `<type>_<short_description>`，全 snake_case（type 與描述用底線連接，不用 slash），branch 名與 worktree 名同一個字串，type 三選一：`feat` 新功能、`bug` 修 bug、`fix` hotfix。例：`feat_auth_flow`
+- 建立前先確認分支不存在：`git branch --list <name>`
 
 ## 建立
 
