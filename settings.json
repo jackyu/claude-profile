@@ -61,59 +61,13 @@
 
   "model": "claude-fable-5[1m]",
 
-  // Hooks 總覽：
-  // - 制度性 hooks（CLAUDE.md 鐵律配套）：write-ledger / claim-audit / anchor-reinject /
-  //   coverage-check / enforce-mr-generator / gitlab-write-gate / notify-complete
-  // - DynamicIsland 通知（島式 UI）：island-hook.sh（App 內建），每事件單掛、只做通知、無副作用
+  // Hooks 總覽：制度性 hooks（CLAUDE.md 鐵律配套）
+  // write-ledger / claim-audit / anchor-reinject / coverage-check / enforce-mr-generator / gitlab-write-gate
   "hooks": {
-    "Notification": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/Applications/DynamicIsland.app/Contents/Resources/island-hook.sh",
-            "timeout": 5
-          }
-        ]
-      }
-    ],
-    "PermissionDenied": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/Applications/DynamicIsland.app/Contents/Resources/island-hook.sh",
-            "timeout": 5
-          }
-        ]
-      }
-    ],
-    "PermissionRequest": [
-      {
-        "matcher": "Bash|Edit|Write|MultiEdit|NotebookEdit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/Applications/DynamicIsland.app/Contents/Resources/island-hook.sh",
-            "timeout": 30
-          }
-        ]
-      }
-    ],
-    "PostCompact": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/Applications/DynamicIsland.app/Contents/Resources/island-hook.sh",
-            "timeout": 5
-          }
-        ]
-      }
-    ],
+    "Notification": [],
+    "PermissionDenied": [],
+    "PermissionRequest": [],
+    "PostCompact": [],
     "PostToolUse": [
       {
         "matcher": "Write|Edit|NotebookEdit",
@@ -124,42 +78,10 @@
             "command": "$HOME/.claude/hooks/write-ledger.sh"
           }
         ]
-      },
-      {
-        "matcher": "Bash|Edit|Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/Applications/DynamicIsland.app/Contents/Resources/island-hook.sh",
-            "timeout": 5
-          }
-        ]
       }
     ],
-    "PostToolUseFailure": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/Applications/DynamicIsland.app/Contents/Resources/island-hook.sh",
-            "timeout": 5
-          }
-        ]
-      }
-    ],
-    "PreCompact": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/Applications/DynamicIsland.app/Contents/Resources/island-hook.sh",
-            "timeout": 5
-          }
-        ]
-      }
-    ],
+    "PostToolUseFailure": [],
+    "PreCompact": [],
     "PreToolUse": [
       {
         "matcher": "mcp__gitLab__create_merge_request|mcp__gitLab__update_merge_request",
@@ -180,41 +102,10 @@
             "command": "$HOME/.claude/hooks/gitlab-write-gate.sh"
           }
         ]
-      },
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/Applications/DynamicIsland.app/Contents/Resources/island-hook.sh",
-            "timeout": 5
-          }
-        ]
       }
     ],
-    "SessionEnd": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/Applications/DynamicIsland.app/Contents/Resources/island-hook.sh",
-            "timeout": 5
-          }
-        ]
-      }
-    ],
+    "SessionEnd": [],
     "SessionStart": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/Applications/DynamicIsland.app/Contents/Resources/island-hook.sh",
-            "timeout": 5
-          }
-        ]
-      },
       {
         "matcher": "",
         "hooks": [
@@ -238,63 +129,11 @@
             "timeout": 10
           }
         ]
-      },
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/Applications/DynamicIsland.app/Contents/Resources/island-hook.sh",
-            "timeout": 5
-          }
-        ]
-      },
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "$HOME/.claude/hooks/notify-complete.sh"
-          }
-        ]
       }
     ],
-    "StopFailure": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/Applications/DynamicIsland.app/Contents/Resources/island-hook.sh",
-            "timeout": 5
-          }
-        ]
-      }
-    ],
-    "SubagentStart": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/Applications/DynamicIsland.app/Contents/Resources/island-hook.sh",
-            "timeout": 5
-          }
-        ]
-      }
-    ],
-    "SubagentStop": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/Applications/DynamicIsland.app/Contents/Resources/island-hook.sh",
-            "timeout": 5
-          }
-        ]
-      }
-    ],
+    "StopFailure": [],
+    "SubagentStart": [],
+    "SubagentStop": [],
     "TaskCompleted": [
       {
         "matcher": "",
@@ -307,18 +146,7 @@
         ]
       }
     ],
-    "UserPromptSubmit": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/Applications/DynamicIsland.app/Contents/Resources/island-hook.sh",
-            "timeout": 5
-          }
-        ]
-      }
-    ]
+    "UserPromptSubmit": []
   },
 
   // 狀態列自定義（顯示於終端機底部）
